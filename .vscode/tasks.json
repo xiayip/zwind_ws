@@ -1,0 +1,37 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+	  {
+		"label": "colcon: build",
+		"type": "shell",
+		"command": [
+		  "source /opt/ros/humble/setup.bash;",
+		  "colcon",
+		  "build",
+		  "--base-path /workspaces/isaac_ros-dev/zwind_ws",
+		  "--symlink-install",
+		  "--event-handlers console_cohesion+",
+		  "--cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=true",
+		//   "--packages-select", 
+		//   "isaac_ros_segway_rmp"
+		//   "segwayrmp",
+		//   "segway_msgs"
+		],
+		"problemMatcher": [],
+		"group": {
+		  "kind": "build",
+		  "isDefault": true
+		}
+	  },
+	  {
+		"label": "colcon: clean",
+		"type": "shell",
+		"command": [
+		  "cd {{WS_PATH}};",
+		  "rm -rf build;",
+		  "rm -rf install;",
+		  "rm -rf log;"
+		]
+	  }
+	]
+  }

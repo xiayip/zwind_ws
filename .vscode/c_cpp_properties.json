@@ -1,0 +1,26 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/humble/include/**",
+        "/workspaces/isaac_ros-dev/zwind_ws/src/zwind_common/isaac_ros_common/isaac_common/include/**",
+        "/workspaces/isaac_ros-dev/zwind_ws/src/zwind_common/isaac_ros_common/isaac_ros_common/include/**",
+        "/workspaces/isaac_ros-dev/zwind_ws/src/zwind_common/topic_based_ros2_control/include/**",
+        "/workspaces/isaac_ros-dev/zwind_ws/src/zwind_perceptor/FAST-LIVO2/FAST-LIVO2/include/**",
+        "/workspaces/isaac_ros-dev/zwind_ws/src/zwind_perceptor/FAST-LIVO2/rpg_vikit/vikit_common/include/**",
+        "/workspaces/isaac_ros-dev/zwind_ws/src/zwind_perceptor/FAST-LIVO2/rpg_vikit/vikit_ros/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-arm64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
