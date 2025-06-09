@@ -1,0 +1,46 @@
+repositories:
+    # zwind_manipulation
+    src/zwind_manipulation/curobo:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_manipulation/curobo.git
+        version: main
+    src/zwind_manipulation/moveit_pick_and_place:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_manipulation/moveit_pick_and_place.git
+        version: main
+    # zwind_perceptor
+    # FAST-LIVO2
+    src/zwind_perceptor/FAST-LIVO2/FAST-LIVO2:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/fast-livo2.git
+        version: ros2
+    src/zwind_perceptor/FAST-LIVO2/livox_ros_driver2:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/livox_ros_driver2.git
+        version: master
+    src/zwind_perceptor/FAST-LIVO2/rpg_vikit:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/rpg_vikit.git
+        version: ros2
+    # zwind_common
+    src/zwind_common/topic_based_ros2_control:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_common/topic_based_ros2_control.git
+        version: main
+    src/zwind_common/isaac_ros_common:
+        type: git
+        url: https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git
+        version: main
+    # zwind_z1
+    src/zwind_z1/z1_description:
+        type: git
+        url: git@jihulab.com:robot_group/z1/z1_description.git
+        version: main
+    src/zwind_z1/z1_bringup:
+        type: git
+        url: git@jihulab.com:robot_group/z1/z1_bringup.git
+        version: main
+    src/zwind_z1/z1_moveit_config:
+        type: git
+        url: git@jihulab.com:robot_group/z1/z1_moveit_config.git
+        version: main

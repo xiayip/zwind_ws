@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# check if pip is installed
+if ! command -v pip &> /dev/null; then
+    echo "pip3 not found, installing pip..."
+    sudo apt update
+    sudo apt install -y python3-pip
+fi
+
+# check if vcs tool is installed
+if ! command -v vcs &> /dev/null; then
+    # install vcs tool
+    echo "vcs not found, installing vcs..."
+    sudo pip install vcstool
+fi
+
+vcs import < dev.repos
