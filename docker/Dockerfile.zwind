@@ -1,0 +1,65 @@
+ARG BASE_IMAGE="ubuntu:22.04"
+FROM ${BASE_IMAGE} AS base_image
+
+# Install prerequisites for zwind z1
+RUN apt-get update && apt-get install -y \
+    bc \
+    libpcl-dev \
+    libpcap-dev \
+    libboost-dev \
+    libgeographic-dev \
+    iproute2 \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
+
+RUN --mount=type=cache,target=/var/cache/apt \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(source /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+    && apt-get update
+
+# Install spatio_temporal_voxel_layer dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-twist-mux \
+    ros-humble-joy-linux \
+    ros-humble-teleop-twist-joy \
+    ros-humble-nav2* \
+    ros-humble-nav2-bringup \
+    ros-humble-geographic-msgs \
+    ros-humble-foxglove-bridge \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
+
+# Install issac ros dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-isaac-ros-data-replayer \
+    ros-humble-isaac-ros-h264-decoder \
+    ros-humble-isaac-ros-h264-encoder \
+    ros-humble-isaac-ros-depth-image-proc \
+    ros-humble-isaac-ros-image-proc \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
+
+# Install gstreamer dependencies
+RUN apt-get update && apt-get install -y \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libgstreamer-plugins-good1.0-dev \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
+
+# Install nova carter dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-gxf-isaac-segway \
+    ros-humble-isaac-ros-segway-rmp \
+    ros-humble-nova-carter-bringup \
+    ros-humble-nova-carter-description \
+    ros-humble-nova-carter-docking \
+    ros-humble-nova-carter-navigation \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
+
+# Install ros2 controllers dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-ros2-controllers \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
