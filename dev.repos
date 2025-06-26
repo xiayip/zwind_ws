@@ -31,6 +31,11 @@ repositories:
         type: git
         url: https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git
         version: main
+    #zwind_teleop
+    src/zwind_teleop/orbbec_video_stream_livekit:
+        type: git
+        url: git@jihulab.com:zwind_teleop/orbbec_video_stream_livekit.git
+        version: main
     # zwind_z1
     src/zwind_z1/z1_description:
         type: git
