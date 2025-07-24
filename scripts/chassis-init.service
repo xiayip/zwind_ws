@@ -1,0 +1,13 @@
+[Unit]
+Description=RMP220 chassis init
+After=sysinit.target network.target udev.service
+Wants=udev.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/systemd/220ChassisInit.sh
+RemainAfterExit=yes
+User=root
+
+[Install]
+WantedBy=multi-user.target
