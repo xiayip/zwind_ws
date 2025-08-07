@@ -8,6 +8,11 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zwind_manipulation/moveit_pick_and_place.git
         version: main
+    src/zwind_manipulation/moveit_servo:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_manipulation/moveit_servo.git
+        version: main
+
     # zwind_perceptor
     # FAST-LIVO2
     src/zwind_perceptor/FAST-LIVO2/FAST-LIVO2:
@@ -22,6 +27,7 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/rpg_vikit.git
         version: ros2
+
     # zwind_common
     src/zwind_common/topic_based_ros2_control:
         type: git
@@ -31,11 +37,17 @@ repositories:
         type: git
         url: https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git
         version: main
+    src/zwind_common/zwind_msgs:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_common/zwind_msgs.git
+        version: main
+
     #zwind_teleop
     src/zwind_teleop/teleop_livekit:
         type: git
         url: git@jihulab.com:robot_group/zwind_teleop/teleop_livekit.git
         version: main
+
     # zwind_z1
     src/zwind_z1/z1_description:
         type: git
