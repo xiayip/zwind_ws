@@ -1,0 +1,7 @@
+# /etc/udev/rules.d/80-can-names.rules
+# 1) platform SoC mttcan -> name as can0
+SUBSYSTEM=="net", KERNEL=="can*", KERNELS=="c310000.mttcan", NAME="can0"
+
+# 2) USB CAN (gs_usb) -> name as can1
+# using driver match (gs_usb) and vendor/product as extra guard
+SUBSYSTEM=="net", KERNEL=="can*", ENV{ID_NET_DRIVER}=="gs_usb", ENV{ID_VENDOR_ID}=="1d50", ENV{ID_MODEL_ID}=="606f", NAME="can1"

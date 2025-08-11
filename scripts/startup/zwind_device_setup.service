@@ -1,11 +1,11 @@
 [Unit]
-Description=RMP220 chassis init
+Description=Zwind device setup service
 After=sysinit.target network.target udev.service
 Wants=udev.service
 
 [Service]
 Type=oneshot
-ExecStart=/etc/systemd/220ChassisInit.sh
+ExecStart=/etc/systemd/zwind_device_setup.sh
 RemainAfterExit=yes
 User=root
 
