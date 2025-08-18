@@ -104,5 +104,6 @@
         "valarray": "cpp",
         "variant": "cpp"
     },
-    "ros.distro": "humble"
+    "ros.distro": "humble",
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true
 }

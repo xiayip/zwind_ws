@@ -41,6 +41,10 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zwind_common/zwind_msgs.git
         version: main
+    src/zwind_common/can_hardware_interface:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_common/can_hardware_interface.git
+        version: main
 
     #zwind_teleop
     src/zwind_teleop/teleop_livekit:
