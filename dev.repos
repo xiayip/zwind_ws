@@ -49,6 +49,14 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zwind_common/zwind_controllers.git
         version: main
+    src/zwind_common/odin_ros_driver:
+        type: git
+        url: https://github.com/manifoldsdk/odin_ros_driver.git
+        version: main
+    src/zwind_common/OrbbecSDK_ROS2:
+        type: git
+        url: https://github.com/orbbec/OrbbecSDK_ROS2.git
+        version: main
 
     #zwind_teleop
     src/zwind_teleop/teleop_livekit:
