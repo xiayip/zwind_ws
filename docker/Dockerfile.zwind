@@ -75,3 +75,10 @@ RUN apt-get update && apt-get install -y \
     ros-humble-plotjuggler-ros \
 && rm -rf /var/lib/apt/lists/* \
 && apt-get clean
+
+# Install fast-livo2 dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-pcl-ros \
+    ros-humble-sophus \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
