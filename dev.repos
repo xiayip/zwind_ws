@@ -51,12 +51,16 @@ repositories:
         version: main
     src/zwind_common/odin1_ros2_driver:
         type: git
-        url: git@10.128.110.176:manipulation-group/odin1_ros2_driver.git
+        url: git@10.128.110.176:manipulation-group/zwind_common/odin1_ros2_driver.git
         version: master
     src/zwind_common/OrbbecSDK_ROS2:
         type: git
         url: https://github.com/orbbec/OrbbecSDK_ROS2.git
         version: main
+    src/zwind_common/pointcloud_compressor:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_common/pointcloud_compressor.git
+        version: master
 
     #zwind_teleop
     src/zwind_teleop/teleop_livekit:
