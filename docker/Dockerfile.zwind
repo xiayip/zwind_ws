@@ -82,3 +82,7 @@ RUN apt-get update && apt-get install -y \
     ros-humble-sophus \
 && rm -rf /var/lib/apt/lists/* \
 && apt-get clean
+
+# fix mpi bug for x86_64: https://forums.developer.nvidia.com/t/mpi-compile-include-path-error-with-nvidia-container-runtime/303541/2
+RUN mkdir -p /opt/hpcx/ompi/lib/x86_64-linux-gnu
+RUN ln -s /opt/hpcx/ompi /opt/hpcx/ompi/lib/x86_64-linux-gnu/openmpi
