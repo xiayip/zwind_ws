@@ -51,7 +51,7 @@ repositories:
         version: main
     src/zwind_common/odin1_ros2_driver:
         type: git
-        url: git@10.128.110.176:manipulation-group/zwind_common/odin1_ros2_driver.git
+        url: git@jihulab.com:robot_group/zwind_common/odin1_ros2_driver.git
         version: master
     src/zwind_common/OrbbecSDK_ROS2:
         type: git
