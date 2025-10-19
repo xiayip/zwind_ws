@@ -13,19 +13,19 @@ repositories:
         url: git@jihulab.com:robot_group/zwind_manipulation/moveit_servo.git
         version: main
 
-    # zwind_perceptor
+    # zwind_perception
     # FAST-LIVO2
-    src/zwind_perceptor/FAST-LIVO2/FAST-LIVO2:
+    src/zwind_perception/FAST-LIVO2/FAST-LIVO2:
         type: git
-        url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/fast-livo2.git
+        url: git@jihulab.com:robot_group/zwind_perception/fast-livo2/fast-livo2.git
         version: ros2
-    src/zwind_perceptor/FAST-LIVO2/livox_ros_driver2:
+    src/zwind_perception/FAST-LIVO2/livox_ros_driver2:
         type: git
-        url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/livox_ros_driver2.git
+        url: git@jihulab.com:robot_group/zwind_perception/fast-livo2/livox_ros_driver2.git
         version: master
-    src/zwind_perceptor/FAST-LIVO2/rpg_vikit:
+    src/zwind_perception/FAST-LIVO2/rpg_vikit:
         type: git
-        url: git@jihulab.com:robot_group/zwind_perceptor/fast-livo2/rpg_vikit.git
+        url: git@jihulab.com:robot_group/zwind_perception/fast-livo2/rpg_vikit.git
         version: ros2
 
     # zwind_common
