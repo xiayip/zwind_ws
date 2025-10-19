@@ -68,6 +68,20 @@ repositories:
         url: git@jihulab.com:robot_group/zwind_teleop/teleop_livekit.git
         version: main
 
+    #zwind_mission
+    src/zwind_mission/BehaviorTree-CPP:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_mission/BehaviorTree-CPP.git
+        version: master
+    src/zwind_mission/BehaviorTree-ROS2:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_mission/BehaviorTree-ROS2.git
+        version: humble
+    src/zwind_mission/zwind_bt:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_mission/zwind_bt.git
+        version: main
+
     # zwind_z1
     src/zwind_z1/z1_description:
         type: git
