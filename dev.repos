@@ -72,7 +72,7 @@ repositories:
     src/zwind_mission/BehaviorTree-CPP:
         type: git
         url: git@jihulab.com:robot_group/zwind_mission/BehaviorTree-CPP.git
-        version: master
+        version: 4.7.0
     src/zwind_mission/BehaviorTree-ROS2:
         type: git
         url: git@jihulab.com:robot_group/zwind_mission/BehaviorTree-ROS2.git
