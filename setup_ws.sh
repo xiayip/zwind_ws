@@ -14,6 +14,13 @@ if ! command -v vcs &> /dev/null; then
     sudo pip install vcstool
 fi
 
+# check if git-lfs is installed
+if ! command -v git-lfs &> /dev/null; then
+    echo "git-lfs not found, installing git-lfs..."
+    sudo apt-get update
+    sudo apt-get install git-lfs
+fi
+
 vcs import < dev.repos --skip-existing
 
 cd ./src/zwind_common/isaac_ros_common/scripts
