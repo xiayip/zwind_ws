@@ -32,7 +32,7 @@ repositories:
     src/zwind_common/isaac_ros_common:
         type: git
         url: https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git
-        version: main
+        version: release-3.2
     src/zwind_common/zwind_msgs:
         type: git
         url: git@jihulab.com:robot_group/zwind_common/zwind_msgs.git
