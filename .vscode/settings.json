@@ -105,5 +105,6 @@
         "variant": "cpp"
     },
     "ros.distro": "humble",
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "cmake.sourceDirectory": "/workspaces/isaac_ros-dev/zwind_ws/build/btcpp_ros2_interfaces/btcpp_ros2_interfaces__py"
 }
