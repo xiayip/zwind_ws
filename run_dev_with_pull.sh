@@ -9,12 +9,28 @@ IMAGE_REMOTE="registry.jihulab.com/robot_group/zwind_ws/isaac_ros_dev-$PLATFORM:
 IMAGE_LOCAL="isaac_ros_dev-$PLATFORM:latest"
 export ISAAC_ROS_WS="$(pwd)/.."
 
-docker pull "$IMAGE_REMOTE"
-if [ $? -ne 0 ]; then
-  echo "❌ Failed to pull the image $IMAGE_REMOTE. Please check network or image name."
-  exit 1
-fi
-echo "✅ Successfully pulled: $IMAGE_REMOTE"
+# Pull image with retry logic
+MAX_RETRIES=10
+RETRY_COUNT=0
+RETRY_DELAY=10
+
+echo "🔄 Pulling image: $IMAGE_REMOTE"
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  docker pull "$IMAGE_REMOTE"
+  if [ $? -eq 0 ]; then
+    echo "✅ Successfully pulled: $IMAGE_REMOTE"
+    break
+  else
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+      echo "⚠️  Pull failed (attempt $RETRY_COUNT/$MAX_RETRIES). Retrying in ${RETRY_DELAY}s..."
+      sleep $RETRY_DELAY
+    else
+      echo "❌ Failed to pull the image after $MAX_RETRIES attempts. Please check network or image name."
+      exit 1
+    fi
+  fi
+done
 
 docker tag "$IMAGE_REMOTE" "$IMAGE_LOCAL"
 echo "➡️ Tagged locally as: $IMAGE_LOCAL"
