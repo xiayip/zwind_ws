@@ -96,4 +96,9 @@ systemctl enable zwind_device_setup
 udevadm control --reload-rules
 udevadm trigger --type=devices --action=add
 
+nvidia-ctk cdi generate --mode=csv --output=/etc/cdi/nvidia.yaml
+
+log "You may need to install gs_usb kernel module if not already installed. "
+log "Check: https://github.com/lucianovk/jetson-gs_usb-kernel-builder"
+
 log "Setup complete"
