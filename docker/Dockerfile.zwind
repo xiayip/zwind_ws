@@ -86,3 +86,16 @@ RUN apt-get update && apt-get install -y \
 # fix mpi bug for x86_64: https://forums.developer.nvidia.com/t/mpi-compile-include-path-error-with-nvidia-container-runtime/303541/2
 RUN mkdir -p /opt/hpcx/ompi/lib/x86_64-linux-gnu
 RUN ln -s /opt/hpcx/ompi /opt/hpcx/ompi/lib/x86_64-linux-gnu/openmpi
+
+# Install imteta y1 dependencies
+RUN apt-get update && apt-get install -y \
+    can-utils \
+    net-tools \
+    iproute2 \
+    libgoogle-glog-dev \
+    libnlopt-cxx-dev \
+    ros-humble-kdl-parser \
+    liborocos-kdl-dev \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
+
