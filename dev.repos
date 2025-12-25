@@ -16,6 +16,10 @@ repositories:
         type: git
         url: https://github.com/PickNikRobotics/bio_ik.git
         version: ros2
+    src/zwind_manipulation/online_signal_smoothing:
+        type: git
+        url: https://github.com/PickNikRobotics/online_signal_smoothing.git
+        version: main
 
     # zwind_perception
     # FAST-LIVO2
