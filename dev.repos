@@ -18,7 +18,11 @@ repositories:
         version: ros2
     src/zwind_manipulation/online_signal_smoothing:
         type: git
-        url: https://github.com/PickNikRobotics/online_signal_smoothing.git
+        url: git@jihulab.com:robot_group/zwind_manipulation/online_signal_smoothing.git
+        version: main
+    src/zwind_manipulation/lerobot:
+        type: git
+        url: https://github.com/huggingface/lerobot.git
         version: main
 
     # zwind_perception
