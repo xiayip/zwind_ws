@@ -71,9 +71,9 @@ repositories:
         version: master
 
     #zwind_teleop
-    src/zwind_teleop/teleop_livekit:
+    src/zwind_teleop/teleop_rtc:
         type: git
-        url: git@jihulab.com:robot_group/zwind_teleop/teleop_livekit.git
+        url: git@jihulab.com:robot_group/zwind_teleop/teleop_rtc.git
         version: main
 
     #zwind_mission
