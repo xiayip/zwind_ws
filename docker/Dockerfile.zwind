@@ -105,3 +105,9 @@ RUN apt-get update && apt-get install -y \
     ros-humble-ruckig \
 && rm -rf /var/lib/apt/lists/* \
 && apt-get clean
+
+# Install lerobot
+RUN python3 -m pip install lerobot
+
+# Add local bin to PATH
+ENV PATH="$HOME/.local/bin:$PATH"
