@@ -1,3 +1,4 @@
+ARG PLATFORM=amd64
 ARG BASE_IMAGE="ubuntu:22.04"
 FROM ${BASE_IMAGE} AS base_image
 
@@ -112,9 +113,30 @@ RUN python3 -m pip install lerobot
 # Add local bin to PATH
 ENV PATH="$HOME/.local/bin:$PATH"
 
-# Install PyTorch with CUDA support for Jetson (JetPack 6.1)
+# --------------------------------------------------------------------------------------------------
+# Platform-specific PyTorch installation
+# --------------------------------------------------------------------------------------------------
+
+# aarch64 stage (Jetson with JetPack 6.1)
+FROM base_image AS pytorch-arm64
+
 RUN python3 -m pip uninstall -y torch \
     && python3 -m pip install --no-cache https://developer.download.nvidia.cn/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
 
 # Downgrade NumPy to be compatible with PyTorch
 RUN python3 -m pip install "numpy>=1.24.4,<2"
+
+# --------------------------------------------------------------------------------------------------
+
+# x86_64 stage (standard PyTorch from PyPI)
+FROM base_image AS pytorch-amd64
+
+RUN python3 -m pip install --upgrade torch torchvision torchaudio
+
+# Downgrade NumPy to be compatible with PyTorch
+RUN python3 -m pip install "numpy>=1.24.4,<2"
+
+# --------------------------------------------------------------------------------------------------
+
+# Final stage - select based on platform
+FROM pytorch-${PLATFORM}
