@@ -131,10 +131,10 @@ RUN python3 -m pip install "numpy>=1.24.4,<2"
 # x86_64 stage (standard PyTorch from PyPI)
 FROM base_image AS pytorch-amd64
 
-RUN python3 -m pip install --upgrade torch torchvision torchaudio
+# RUN python3 -m pip install --upgrade torch torchvision torchaudio
 
 # Downgrade NumPy to be compatible with PyTorch
-RUN python3 -m pip install "numpy>=1.24.4,<2"
+# RUN python3 -m pip install "numpy>=1.24.4,<2"
 
 # --------------------------------------------------------------------------------------------------
 
