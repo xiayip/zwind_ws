@@ -69,6 +69,10 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zwind_common/pointcloud_compressor.git
         version: master
+    src/zwind_common/audio_common:
+        type: git
+        url: https://github.com/mgonzs13/audio_common.git
+        version: main
 
     #zwind_teleop
     src/zwind_teleop/teleop_rtc:
