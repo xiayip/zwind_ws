@@ -2,6 +2,31 @@ ARG PLATFORM=amd64
 ARG BASE_IMAGE="ubuntu:22.04"
 FROM ${BASE_IMAGE} AS base_image
 
+# Refresh expired GPG keys for ROS2 and Yarn repositories
+# ROS2 key refresh
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# Yarn key refresh (or remove if not needed)
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list > /dev/null \
+    && rm -f /etc/apt/sources.list.d/yarn.list.bak 2>/dev/null || true
+
+# clean stale apt metadata and remove old repo entries
+RUN rm -rf /var/lib/apt/lists/* && \
+    sed -i '/isaac-ros\/release-3/d' /etc/apt/sources.list
+
+# install isaac ros repo key using modern method
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y wget gnupg && \
+    wget -qO - https://isaac.download.nvidia.com/isaac-ros/repos.key \
+        | gpg --dearmor -o /usr/share/keyrings/isaac-ros.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/isaac-ros.gpg] \
+        https://isaac.download.nvidia.com/isaac-ros/release-3 \
+        $(. /etc/os-release && echo $VERSION_CODENAME) release-3.0" \
+        > /etc/apt/sources.list.d/isaac-ros.list && \
+    apt-get update
+
 # Install prerequisites for zwind z1
 RUN apt-get update && apt-get install -y \
     bc \
@@ -13,10 +38,14 @@ RUN apt-get update && apt-get install -y \
 && rm -rf /var/lib/apt/lists/* \
 && apt-get clean
 
-RUN --mount=type=cache,target=/var/cache/apt \
-    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(source /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-    && apt-get update
+# Install audio and formatting tools
+RUN apt-get update && apt-get install -y \
+    portaudio19-dev \
+    espeak \
+    ros-humble-ament-clang-format \
+    ros-humble-ament-cmake-clang-format \
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get clean
 
 # Install spatio_temporal_voxel_layer dependencies
 RUN apt-get update && apt-get install -y \
@@ -119,8 +148,12 @@ RUN apt-get update && apt-get install -y \
 # Install lerobot
 RUN python3 -m pip install lerobot
 
+# Install right version of setiptool
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install "setuptools>=78.1.1,<80.0.0"
+
 # Add local bin to PATH
-ENV PATH="$HOME/.local/bin:$PATH"
+# ENV PATH="$HOME/.local/bin:$PATH"
 
 # --------------------------------------------------------------------------------------------------
 # Platform-specific PyTorch installation
@@ -149,3 +182,4 @@ RUN python3 -m pip install --upgrade pip \
 
 # Final stage - select based on platform
 FROM pytorch-${PLATFORM}
+
