@@ -24,6 +24,14 @@ repositories:
         type: git
         url: https://github.com/huggingface/lerobot.git
         version: main
+    src/zwind_manipulation/lerobot_zwind:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_manipulation/lerobot_zwind.git
+        version: main
+    src/zwind_manipulation/lerobot_ros2:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_manipulation/lerobot_ros2.git
+        version: main
 
     # zwind_perception
     # FAST-LIVO2
