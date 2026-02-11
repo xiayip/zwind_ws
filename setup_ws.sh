@@ -21,7 +21,7 @@ if ! command -v git-lfs &> /dev/null; then
     sudo apt-get install git-lfs
 fi
 
-vcs import < dev.repos --skip-existing
+vcs import < dev.repos --skip-existing --repos --debug
 
 current_path=$(pwd)
 cd ./src/zwind_common/isaac_ros_common/scripts
