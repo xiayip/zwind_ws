@@ -23,7 +23,8 @@ fi
 
 vcs import < dev.repos --skip-existing
 
+current_path=$(pwd)
 cd ./src/zwind_common/isaac_ros_common/scripts
 echo -e "CONFIG_IMAGE_KEY=ros2_humble.zwind\nCONFIG_DOCKER_SEARCH_DIRS=(../../../../docker/ ../docker)" > .isaac_ros_common-config
-echo -e "-v $HOME/.ssh:/home/admin/.ssh:ro\n-v /dev:/dev\n-v $HOME/.openclaw:/home/admin/.openclaw" > .isaac_ros_dev-dockerargs
+echo -e "-v $HOME/.ssh:/home/admin/.ssh:ro\n-v /dev:/dev\n-v $current_path/openclaw_data:/home/admin/.openclaw" > .isaac_ros_dev-dockerargs
 # echo -e "-v /etc/nova/:/etc/nova/\n-v /opt/nvidia/nova/:/opt/nvidia/nova/\n-v /mnt/nova_ssd/recordings:/mnt/nova_ssd/recordings" > .isaac_ros_dev-dockerargs
