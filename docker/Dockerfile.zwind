@@ -111,11 +111,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # ==================================================================================================
-# 5. Node.js & OpenClaw
+# 5. Node.js 22 & OpenClaw
 # ==================================================================================================
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+# Base image ships Node 18; we need 22+ for openclaw.
+# Remove old nodesource list before adding the new one.
+RUN rm -f /etc/apt/sources.list.d/nodesource.list && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    node --version
 RUN npm install -g openclaw@latest
 
 # ==================================================================================================
