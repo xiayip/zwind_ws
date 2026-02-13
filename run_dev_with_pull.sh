@@ -1,4 +1,9 @@
 #!/bin/bash
+# Pull a pre-built image from registry, then launch the dev container (skip local build)
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+export ISAAC_ROS_WS="$(pwd)/.."
 
 # Login to the Docker registry
 docker login registry.jihulab.com -u gitlab+deploy-token-14567 -p gldt-2MGMFUpyCsmerext2sK6
@@ -7,7 +12,6 @@ docker login registry.jihulab.com -u gitlab+deploy-token-14567 -p gldt-2MGMFUpyC
 PLATFORM="$(uname -m)"
 IMAGE_REMOTE="registry.jihulab.com/robot_group/zwind_ws/isaac_ros_dev-$PLATFORM:latest"
 IMAGE_LOCAL="isaac_ros_dev-$PLATFORM:latest"
-export ISAAC_ROS_WS="$(pwd)/.."
 
 # Pull image with retry logic
 MAX_RETRIES=10
@@ -35,4 +39,5 @@ done
 docker tag "$IMAGE_REMOTE" "$IMAGE_LOCAL"
 echo "➡️ Tagged locally as: $IMAGE_LOCAL"
 
-./src/zwind_common/isaac_ros_common/scripts/run_dev.sh -b
+# Run container — skip build since we already pulled the image
+./scripts/run_dev.sh -b

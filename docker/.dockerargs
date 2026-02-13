@@ -1,0 +1,2 @@
+-v /home/admin/.ssh:/home/admin/.ssh:ro
+-v /dev:/dev
