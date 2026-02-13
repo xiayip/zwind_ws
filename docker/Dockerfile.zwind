@@ -94,6 +94,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ==================================================================================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Image / depth processing
+    ros-humble-isaac-ros-common \
     ros-humble-isaac-ros-data-replayer \
     ros-humble-isaac-ros-depth-image-proc \
     ros-humble-isaac-ros-image-proc \
@@ -114,12 +115,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 5. Node.js 22 & OpenClaw
 # ==================================================================================================
 # Base image ships Node 18; we need 22+ for openclaw.
-# Remove old nodesource list before adding the new one.
-RUN rm -f /etc/apt/sources.list.d/nodesource.list && \
+# Must purge old nodejs first — apt won't auto-upgrade across major versions.
+RUN apt-get purge -y nodejs && \
+    rm -f /etc/apt/sources.list.d/nodesource.list && \
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/* && \
-    node --version
+    node --version && npm --version
 RUN npm install -g openclaw@latest
 
 # ==================================================================================================
