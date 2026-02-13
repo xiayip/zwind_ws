@@ -2,23 +2,29 @@ ARG PLATFORM=amd64
 ARG BASE_IMAGE="ubuntu:22.04"
 FROM ${BASE_IMAGE} AS base_image
 
-# Refresh expired GPG keys for ROS2 and Yarn repositories
-# ROS2 key refresh
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+# ==================================================================================================
+# 1. APT Repository Setup (GPG keys & source lists)
+# ==================================================================================================
 
-# Yarn key refresh (or remove if not needed)
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list > /dev/null \
-    && rm -f /etc/apt/sources.list.d/yarn.list.bak 2>/dev/null || true
+# ROS 2 Humble repository
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+        > /etc/apt/sources.list.d/ros2.list
 
-# clean stale apt metadata and remove old repo entries
+# Yarn repository
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg \
+        | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] \
+        https://dl.yarnpkg.com/debian/ stable main" \
+        > /etc/apt/sources.list.d/yarn.list
+
+# Isaac ROS repository (clean stale entries first)
 RUN rm -rf /var/lib/apt/lists/* && \
     sed -i '/isaac-ros\/release-3/d' /etc/apt/sources.list
-
-# install isaac ros repo key using modern method
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y wget gnupg && \
+    apt-get update && apt-get install -y --no-install-recommends wget gnupg && \
     wget -qO - https://isaac.download.nvidia.com/isaac-ros/repos.key \
         | gpg --dearmor -o /usr/share/keyrings/isaac-ros.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/isaac-ros.gpg] \
@@ -27,161 +33,139 @@ RUN --mount=type=cache,target=/var/cache/apt \
         > /etc/apt/sources.list.d/isaac-ros.list && \
     apt-get update
 
-# Install prerequisites for zwind z1
-RUN apt-get update && apt-get install -y \
+# ==================================================================================================
+# 2. System Libraries
+# ==================================================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build / networking utilities
     bc \
-    libpcl-dev \
-    libpcap-dev \
+    can-utils \
+    iproute2 \
+    net-tools \
+    # Boost / PCL / math
     libboost-dev \
     libgeographic-dev \
-    iproute2 \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# Install audio and formatting tools
-RUN apt-get update && apt-get install -y \
-    portaudio19-dev \
+    libpcl-dev \
+    libpcap-dev \
+    # Audio
     espeak \
-    ros-humble-ament-clang-format \
-    ros-humble-ament-cmake-clang-format \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# Install spatio_temporal_voxel_layer dependencies
-RUN apt-get update && apt-get install -y \
-    ros-humble-twist-mux \
-    ros-humble-joy-linux \
-    ros-humble-teleop-twist-joy \
-    ros-humble-nav2* \
-    ros-humble-nav2-bringup \
-    ros-humble-geographic-msgs \
-    ros-humble-foxglove-bridge \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# Install issac ros dependencies
-RUN apt-get update && apt-get install -y \
-    ros-humble-isaac-ros-data-replayer \
-    ros-humble-isaac-ros-h264-decoder \
-    ros-humble-isaac-ros-h264-encoder \
-    ros-humble-isaac-ros-depth-image-proc \
-    ros-humble-isaac-ros-image-proc \
-    ros-humble-isaac-ros-cumotion-moveit \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# Install gstreamer dependencies
-RUN apt-get update && apt-get install -y \
+    portaudio19-dev \
+    # GStreamer
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
     libgstreamer-plugins-good1.0-dev \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
+    # Draco 3D compression
+    libdraco-dev \
+    # KDL / optimization / logging
+    libgoogle-glog-dev \
+    libnlopt-cxx-dev \
+    liborocos-kdl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install nova carter dependencies
-RUN apt-get update && apt-get install -y \
+# ==================================================================================================
+# 3. ROS 2 Humble Packages
+# ==================================================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Dev tools
+    ros-humble-ament-clang-format \
+    ros-humble-ament-cmake-clang-format \
+    # Navigation
+    ros-humble-nav2* \
+    ros-humble-nav2-bringup \
+    ros-humble-twist-mux \
+    ros-humble-joy-linux \
+    ros-humble-teleop-twist-joy \
+    ros-humble-geographic-msgs \
+    # Controllers & kinematics
+    ros-humble-ros2-controllers \
+    ros-humble-kdl-parser \
+    ros-humble-osqp-vendor \
+    ros-humble-ruckig \
+    # Perception
+    ros-humble-pcl-ros \
+    ros-humble-sophus \
+    # Visualization / debugging
+    ros-humble-foxglove-bridge \
+    ros-humble-plotjuggler-ros \
+    && rm -rf /var/lib/apt/lists/*
+
+# ==================================================================================================
+# 4. Isaac ROS Packages
+# ==================================================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Image / depth processing
+    ros-humble-isaac-ros-data-replayer \
+    ros-humble-isaac-ros-depth-image-proc \
+    ros-humble-isaac-ros-image-proc \
+    ros-humble-isaac-ros-h264-decoder \
+    ros-humble-isaac-ros-h264-encoder \
+    # Motion planning
+    ros-humble-isaac-ros-cumotion-moveit \
+    # Nova Carter robot
     ros-humble-gxf-isaac-segway \
     ros-humble-isaac-ros-segway-rmp \
     ros-humble-nova-carter-bringup \
     ros-humble-nova-carter-description \
     ros-humble-nova-carter-docking \
     ros-humble-nova-carter-navigation \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Install ros2 controllers dependencies
-RUN apt-get update && apt-get install -y \
-    ros-humble-ros2-controllers \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# Install livekit python sdk with pip
-RUN python3 -m pip install --upgrade pip \
-    && python3 -m pip install livekit livekit-api
-
-# Install google draco dependencies
-RUN apt-get update && apt-get install -y \
-    libdraco-dev \
-    ros-humble-plotjuggler-ros \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# Install fast-livo2 dependencies
-RUN apt-get update && apt-get install -y \
-    ros-humble-pcl-ros \
-    ros-humble-sophus \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# --------------------------------------------------------------------------------------------------
-# Install OpenClaw
-# --------------------------------------------------------------------------------------------------
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
+# ==================================================================================================
+# 5. Node.js & OpenClaw
+# ==================================================================================================
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
 RUN npm install -g openclaw@latest
 
-# fix mpi bug for x86_64: https://forums.developer.nvidia.com/t/mpi-compile-include-path-error-with-nvidia-container-runtime/303541/2
-RUN mkdir -p /opt/hpcx/ompi/lib/x86_64-linux-gnu
-RUN ln -s /opt/hpcx/ompi /opt/hpcx/ompi/lib/x86_64-linux-gnu/openmpi
+# ==================================================================================================
+# 6. Python Packages (pip)
+# ==================================================================================================
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir \
+        livekit \
+        livekit-api
 
-# Install imteta y1 dependencies
-RUN apt-get update && apt-get install -y \
-    can-utils \
-    net-tools \
-    iproute2 \
-    libgoogle-glog-dev \
-    libnlopt-cxx-dev \
-    ros-humble-kdl-parser \
-    liborocos-kdl-dev \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
+# ==================================================================================================
+# 7. Platform Bug Fixes
+# ==================================================================================================
+# Fix MPI include path on x86_64
+# https://forums.developer.nvidia.com/t/mpi-compile-include-path-error-with-nvidia-container-runtime/303541/2
+RUN mkdir -p /opt/hpcx/ompi/lib/x86_64-linux-gnu && \
+    ln -s /opt/hpcx/ompi /opt/hpcx/ompi/lib/x86_64-linux-gnu/openmpi
 
-# Install zwind manipulation dependencies
-RUN apt-get update && apt-get install -y \
-    ros-humble-osqp-vendor \
-    ros-humble-ruckig \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
-
-# aarch64 stage (Jetson with JetPack 6.1)
+# ==================================================================================================
+# 8. aarch64 stage  (Jetson — JetPack 6.1)
+# ==================================================================================================
 FROM base_image AS pytorch-arm64
 
-# --------------------------------------------------------------------------------------------------
-# Install LeRobot
-# --------------------------------------------------------------------------------------------------
-RUN python3 -m pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple lerobot
+ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
-# --------------------------------------------------------------------------------------------------
-# Platform-specific PyTorch installation
-# --------------------------------------------------------------------------------------------------
-RUN python3 -m pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple --no-cache-dir 'numpy<2.0'
+# LeRobot (installed first — may pull an incompatible PyTorch version)
+RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir lerobot
 
-RUN python3 -m pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple --no-cache \
-    https://developer.download.nvidia.cn/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
-
+# Override with the correct PyTorch + torchvision for JetPack 6.1
+RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir 'numpy<2.0' && \
+    python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir \
+        https://developer.download.nvidia.cn/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
 RUN git clone --branch=v0.20.0 --depth=1 https://github.com/pytorch/vision /tmp/torchvision && \
-    cd /tmp/torchvision && \
-    python3 setup.py install && \
+    cd /tmp/torchvision && python3 setup.py install && \
     rm -rf /tmp/torchvision
 
-# Verify installation
+# Verify
 RUN python3 -c 'import torch; import torchvision; print(f"PyTorch: {torch.__version__}, torchvision: {torchvision.__version__}")'
 
-# --------------------------------------------------------------------------------------------------
-
-# x86_64 stage (standard PyTorch from PyPI)
+# ==================================================================================================
+# 9. x86_64 stage  (standard PyTorch from PyPI)
+# ==================================================================================================
 FROM base_image AS pytorch-amd64
 
-# Install lerobot
-RUN python3 -m pip install lerobot
+RUN python3 -m pip install --no-cache-dir lerobot
 
-# --------------------------------------------------------------------------------------------------
-
-# Final stage - select based on platform
+# ==================================================================================================
+# 10. Final stage — select based on PLATFORM
+# ==================================================================================================
 FROM pytorch-${PLATFORM}
 
-# Frequently changed runtime Python deps
+# Runtime Python deps (change frequently → keep in a separate layer)
 RUN python3 -m pip install --no-cache-dir sounddevice
