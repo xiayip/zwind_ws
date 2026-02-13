@@ -182,3 +182,6 @@ RUN python3 -m pip install lerobot
 
 # Final stage - select based on platform
 FROM pytorch-${PLATFORM}
+
+# Frequently changed runtime Python deps
+RUN python3 -m pip install --no-cache-dir sounddevice
