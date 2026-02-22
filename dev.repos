@@ -77,6 +77,10 @@ repositories:
         type: git
         url: https://github.com/mgonzs13/audio_common.git
         version: main
+    src/zwind_common/imeta_y1_ros2:
+        type: git
+        url: git@jihulab.com:robot_group/zwind_common/imeta_y1_ros2.git
+        version: main
 
     #zwind_teleop
     src/zwind_teleop/teleop_rtc:
