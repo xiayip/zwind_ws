@@ -173,5 +173,7 @@ RUN python3 -m pip install --no-cache-dir lerobot
 # ==================================================================================================
 FROM pytorch-${PLATFORM}
 
+ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
 # Runtime Python deps (change frequently → keep in a separate layer)
-RUN python3 -m pip install --no-cache-dir sounddevice
+RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir sounddevice 'setuptools==70.0.0'
