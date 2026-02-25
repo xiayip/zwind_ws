@@ -1,0 +1,71 @@
+stages:
+  - build
+  # - push
+
+variables:
+  REGISTRY: registry.jihulab.com
+  REGISTRY_IMAGE: ${REGISTRY}/robot_group/zwind_ws/isaac_ros_dev
+  DOCKER_BUILDKIT: 1
+
+# ── Build ────────────────────────────────────────────────────────────────────────
+.build_common: &build_common
+  stage: build
+  script:
+    - export IMAGE_LOCAL="isaac_ros_dev-${PLATFORM}"
+    - echo "🔨 Building Docker image for platform ${PLATFORM}"
+    - cd ${CI_PROJECT_DIR}
+    - ./scripts/build_image.sh
+    - docker image ls | grep "${IMAGE_LOCAL}"
+    - echo "✅ Build done — ${IMAGE_LOCAL}"
+
+build:x86_64:
+  <<: *build_common
+  tags:
+    - x86_64
+  variables:
+    PLATFORM: "x86_64"
+
+build:aarch64:
+  <<: *build_common
+  tags:
+    - aarch64
+  variables:
+    PLATFORM: "aarch64"
+
+# # ── Push ─────────────────────────────────────────────────────────────────────────
+# .push_common: &push_common
+#   stage: push
+#   before_script:
+#     - docker login -u ${CI_DEPLOY_USER} -p ${CI_DEPLOY_PASSWORD} ${REGISTRY}
+#   script:
+#     - export IMAGE_LOCAL="isaac_ros_dev-${PLATFORM}"
+#     - export IMAGE_REMOTE="${REGISTRY_IMAGE}-${PLATFORM}:latest"
+#     - echo "🏷️  Tagging ${IMAGE_LOCAL} → ${IMAGE_REMOTE}"
+#     - docker tag ${IMAGE_LOCAL} ${IMAGE_REMOTE}
+#     - echo "📤 Pushing to registry..."
+#     - docker push ${IMAGE_REMOTE}
+#     - echo "✅ Successfully pushed ${IMAGE_REMOTE}"
+#   after_script:
+#     - docker logout ${REGISTRY} || true
+#   only:
+#     - main
+#     - master
+
+# push:x86_64:
+#   <<: *push_common
+#   needs:
+#     - build:x86_64
+#   tags:
+#     - x86_64
+#   variables:
+#     PLATFORM: "x86_64"
+
+# push:aarch64:
+#   <<: *push_common
+#   needs:
+#     - build:aarch64
+#   tags:
+#     - aarch64
+#   variables:
+#     PLATFORM: "aarch64"
+
