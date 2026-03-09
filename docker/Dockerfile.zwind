@@ -176,4 +176,6 @@ FROM pytorch-${PLATFORM}
 ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 # Runtime Python deps (change frequently → keep in a separate layer)
-RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir sounddevice 'setuptools==70.0.0'
+# Try Tsinghua mirror first, fallback to official PyPI if 403/timeout
+RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir sounddevice 'setuptools==70.0.0' || \
+    python3 -m pip install --no-cache-dir sounddevice 'setuptools==70.0.0'
