@@ -56,7 +56,7 @@ push:x86_64:
   needs:
     - build:x86_64
   tags:
-    - x86_64
+    - x86_64-shell
   variables:
     PLATFORM: "x86_64"
 
@@ -65,7 +65,7 @@ push:aarch64:
   needs:
     - build:aarch64
   tags:
-    - aarch64
+    - aarch64-shell
   variables:
     PLATFORM: "aarch64"
 
