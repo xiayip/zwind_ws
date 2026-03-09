@@ -21,14 +21,14 @@ variables:
 build:x86_64:
   <<: *build_common
   tags:
-    - x86_64
+    - x86_64-shell
   variables:
     PLATFORM: "x86_64"
 
 build:aarch64:
   <<: *build_common
   tags:
-    - aarch64
+    - aarch64-shell
   variables:
     PLATFORM: "aarch64"
 
