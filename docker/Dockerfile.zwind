@@ -148,7 +148,7 @@ FROM base_image AS pytorch-arm64
 ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 # LeRobot (installed first — may pull an incompatible PyTorch version)
-RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir lerobot
+RUN python3 -m pip install --upgrade lerobot==0.5.0
 
 # Override with the correct PyTorch + torchvision for JetPack 6.1
 RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir 'numpy<2.0' && \
@@ -166,7 +166,7 @@ RUN python3 -c 'import torch; import torchvision; print(f"PyTorch: {torch.__vers
 # ==================================================================================================
 FROM base_image AS pytorch-amd64
 
-RUN python3 -m pip install --no-cache-dir lerobot
+RUN python3 -m pip install --upgrade lerobot==0.5.0
 
 # ==================================================================================================
 # 10. Final stage — select based on PLATFORM
