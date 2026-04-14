@@ -129,8 +129,8 @@ RUN npm install -g openclaw@latest
 # ==================================================================================================
 RUN python3 -m pip install --no-cache-dir --upgrade pip && \
     python3 -m pip install --no-cache-dir \
-        livekit \
-        livekit-api
+        livekit==1.1.5 \
+        livekit-api==1.1.0
 
 # ==================================================================================================
 # 7. Platform Bug Fixes
