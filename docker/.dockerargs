@@ -1,2 +1,2 @@
--v /home/admin/.ssh:/home/admin/.ssh:ro
--v /dev:/dev
+-v /home/nvidia/.ssh:/home/admin/.ssh:ro
+--env-file /etc/zwind/robot.env
