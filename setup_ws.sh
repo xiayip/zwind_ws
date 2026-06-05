@@ -1,24 +1,23 @@
 #!/bin/bash
+set -euo pipefail
 
-# check if pip is installed
-if ! command -v pip &> /dev/null; then
-    echo "pip3 not found, installing pip..."
-    sudo apt update
-    sudo apt install -y python3-pip
-fi
+APT_PACKAGES=()
 
 # check if vcs tool is installed
 if ! command -v vcs &> /dev/null; then
-    # install vcs tool
     echo "vcs not found, installing vcs..."
-    sudo pip install vcstool
+    APT_PACKAGES+=(vcstool)
 fi
 
 # check if git-lfs is installed
 if ! command -v git-lfs &> /dev/null; then
     echo "git-lfs not found, installing git-lfs..."
+    APT_PACKAGES+=(git-lfs)
+fi
+
+if [[ ${#APT_PACKAGES[@]} -gt 0 ]]; then
     sudo apt-get update
-    sudo apt-get install git-lfs
+    sudo apt-get install -y --no-install-recommends "${APT_PACKAGES[@]}"
 fi
 
 vcs import < dev.repos --skip-existing --repos --debug
