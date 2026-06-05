@@ -34,7 +34,7 @@ if [[ "$PLATFORM" != "aarch64" ]]; then
     exit 1
 fi
 
-FINAL_IMAGE="isaac_ros_dev-${PLATFORM}"
+FINAL_IMAGE="zephyr_dev_24.04-${PLATFORM}:latest"
 
 BUILD_ARGS=("--build-arg" "USERNAME=admin")
 

@@ -59,8 +59,8 @@ fi
 
 # --------------- Detect platform -----------------------------------------------------------------
 PLATFORM="$(uname -m)"
-BASE_NAME="isaac_ros_dev-${PLATFORM}"
-CONTAINER_NAME="${BASE_NAME}-container"
+BASE_NAME="zephyr_dev_24.04-${PLATFORM}:latest"
+CONTAINER_NAME="zephyr_dev_24.04-${PLATFORM}-container"
 
 # --------------- Reuse / attach to existing container --------------------------------------------
 # Remove exited containers with the same name

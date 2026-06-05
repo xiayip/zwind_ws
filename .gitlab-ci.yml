@@ -4,14 +4,14 @@ stages:
 
 variables:
   REGISTRY: registry.jihulab.com
-  REGISTRY_IMAGE: ${REGISTRY}/robot_group/zwind_ws/isaac_ros_dev
+  REGISTRY_IMAGE: ${REGISTRY}/robot_group/zwind_ws/zephyr_dev_24.04
   DOCKER_BUILDKIT: 1
 
 # ── Build ────────────────────────────────────────────────────────────────────────
 .build_common: &build_common
   stage: build
   script:
-    - export IMAGE_LOCAL="isaac_ros_dev-${PLATFORM}"
+    - export IMAGE_LOCAL="zephyr_dev_24.04-${PLATFORM}:latest"
     - echo "🔨 Building Docker image for platform ${PLATFORM}"
     - cd ${CI_PROJECT_DIR}
     - ./scripts/build_image.sh
@@ -39,7 +39,7 @@ build:aarch64:
     - test -n "${CI_DOCKER_PUSH_USER}" && test -n "${CI_DOCKER_PUSH_PASSWORD}"
     - echo "${CI_DOCKER_PUSH_PASSWORD}" | docker login ${REGISTRY} --username "${CI_DOCKER_PUSH_USER}" --password-stdin
   script:
-    - export IMAGE_LOCAL="isaac_ros_dev-${PLATFORM}"
+    - export IMAGE_LOCAL="zephyr_dev_24.04-${PLATFORM}:latest"
     - export IMAGE_REMOTE="${REGISTRY_IMAGE}-${PLATFORM}:latest"
     - echo "🏷️  Tagging ${IMAGE_LOCAL} → ${IMAGE_REMOTE}"
     - docker tag ${IMAGE_LOCAL} ${IMAGE_REMOTE}
