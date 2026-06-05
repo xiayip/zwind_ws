@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # NVIDIA CORPORATION and its licensors retain all intellectual property
 # and proprietary rights in and to this software, related documentation
@@ -6,20 +6,28 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
+# ==================================================================================================
+# Dockerfile.base — Platform base layer (aarch64 / Jetson)
+#
+#   Ubuntu 24.04 (noble) + CUDA 13 + TensorRT + VPI4 + Triton + PyTorch
+#
+# Targets JetPack 7.x / L4T r39.2 (CUDA 13.2). CUDA-13.x is forward compatible, so a CUDA-13.0
+# base image runs fine against the 13.2 host driver; the matching runtime libs are pulled from the
+# Jetson apt repo (${L4T_RELEASE}) and the host tegra mounts injected by run_dev.sh.
+#
+# Only aarch64 is supported. All version-sensitive pins are exposed as ARGs near the top.
+# ==================================================================================================
 
-ARG PLATFORM=amd64
-ARG BASE_IMAGE=nvidia/cuda:12.6.1-devel-ubuntu22.04
+ARG BASE_IMAGE=nvcr.io/nvidia/cuda-dl-base:25.08-cuda13.0-devel-ubuntu24.04
+FROM ${BASE_IMAGE} AS base
 
-# --------------------------------------------------------------------------------------------------
-# https://docs.nvidia.com/deeplearning/frameworks/user-guide/index.html
-# https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html
-FROM nvcr.io/nvidia/tritonserver:24.08-py3 AS base-amd64
-
-FROM nvcr.io/nvidia/12.6.11-devel:12.6.11-devel-aarch64-ubuntu22.04 AS base-arm64
-# --------------------------------------------------------------------------------------------------
-
-FROM base-${PLATFORM} AS common
-ARG PLATFORM
+# -- Version knobs (bump to match your JetPack / L4T) ----------------------------------------------
+ARG L4T_RELEASE=r39.2
+ARG ISAAC_ROS_RELEASE=release-4.0
+ARG CUDA_PKG=13
+ARG CVCUDA_VERSION=0.14.0
+ARG TRITON_TARBALL=tritonserver.2.60-aarch64.tar.gz
+ARG BOOST_VERSION=1_80_0
 
 # Store list of packages (must be first)
 RUN mkdir -p /opt/nvidia/isaac_ros_dev_base && dpkg-query -W | sort > /opt/nvidia/isaac_ros_dev_base/base-start-packages.csv
@@ -29,462 +37,329 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV SHELL=/bin/bash
 SHELL ["/bin/bash", "-c"]
 
+# Ensure /tmp permissions are correct for apt
+RUN mkdir -p /tmp && chmod 1777 /tmp
+
 # Ensure we have universe
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y \
-    software-properties-common \
+        software-properties-common \
     && add-apt-repository universe \
     && apt-get update
 
 # Fundamentals
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y \
-    apt-transport-https \
-    apt-utils \
-    bash-completion \
-    build-essential \
-    ca-certificates \
-    clang-format \
-    cmake \
-    curl \
-    git \
-    git-lfs \
-    gnupg2 \
-    iputils-ping \
-    libgoogle-glog-dev \
-    locales \
-    lsb-release \
-    mlocate \
-    rsync \
-    tar \
-    unzip \
-    vim \
-    wget \
-    zlib1g-dev
+        apt-transport-https \
+        apt-utils \
+        bash-completion \
+        build-essential \
+        ca-certificates \
+        clang-format \
+        cmake \
+        curl \
+        git \
+        git-lfs \
+        gnupg2 \
+        iputils-ping \
+        libgoogle-glog-dev \
+        locales \
+        lsb-release \
+        plocate \
+        rsync \
+        tar \
+        unzip \
+        vim \
+        wget \
+        zlib1g-dev \
+        python3-dev \
+        python3-flake8 \
+        python3-flake8-builtins \
+        python3-flake8-class-newline \
+        python3-flake8-comprehensions \
+        python3-flake8-deprecated \
+        python3-flake8-docstrings \
+        python3-flake8-import-order \
+        python3-flake8-quotes \
+        python3-pip \
+        python3-pybind11 \
+        python3-pytest \
+        python3-pytest-repeat \
+        python3-pytest-rerunfailures \
+        python3-pytest-cov \
+        python3-venv \
+        python3-zmq \
+        python3.12 \
+        python3.12-venv \
+        python3-opencv \
+        python3-scipy \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
-# Python basics
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y \
-    python3-dev \
-    python3-distutils \
-    python3-flake8 \
-    python3-pybind11 \
-    python3-pytest \
-    python3-pytest-repeat \
-    python3-pytest-rerunfailures \
-    python3-pytest-cov \
-    python3-venv \
-    python3-zmq \
-    python3.10 \
-    python3.10-venv
-
-# Set Python3 as default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
-
-
-# Install pip using the get-pip.py script. apt-get install python3-pip does not install the latest pip version.
-RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py
-
-# Add Isaac apt repository
-RUN --mount=type=cache,target=/var/cache/apt \
-    wget -qO - https://isaac.download.nvidia.com/isaac-ros/repos.key | apt-key add - && \
-    grep -qxF "deb https://isaac.download.nvidia.com/isaac-ros/release-3 $(lsb_release -cs) release-3.0" /etc/apt/sources.list || \
-    echo "deb https://isaac.download.nvidia.com/isaac-ros/release-3 $(lsb_release -cs) release-3.0" | tee -a /etc/apt/sources.list \
+# Setup NVIDIA CUDA apt keyring (Jetson / SBSA)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    wget -O /tmp/cuda-keyring.deb \
+        https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/cuda-keyring_1.1-1_all.deb \
+    && dpkg-deb -I /tmp/cuda-keyring.deb > /dev/null \
+    && dpkg -i /tmp/cuda-keyring.deb \
+    && rm /tmp/cuda-keyring.deb \
     && apt-get update
 
+# Add Isaac ROS apt repository
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    /bin/bash -c ' \
+    set -e; \
+    k="/usr/share/keyrings/nvidia-isaac-ros.gpg"; \
+    curl -fsSL https://isaac.download.nvidia.com/isaac-ros/repos.key | gpg --dearmor | tee -a "$k" > /dev/null; \
+    f="/etc/apt/sources.list.d/nvidia-isaac-ros.list"; \
+    touch "$f"; \
+    s="deb [signed-by=$k] https://isaac.download.nvidia.com/isaac-ros/'"${ISAAC_ROS_RELEASE}"' $(lsb_release -cs) main"; \
+    grep -qxF "$s" "$f" || echo "$s" | tee -a "$f"; \
+    apt-get update \
+    '
+
 # Core dev libraries
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y \
-    gfortran \
-    graphicsmagick-libmagick-dev-compat \
-    jq \
-    kmod \
-    lcov \
-    libasio-dev \
-    libassimp-dev \
-    libatlas3-base \
-    libatlas-base-dev \
-    libblas3 \
-    libboost-all-dev \
-    libboost-dev \
-    libbullet-dev \
-    libceres-dev \
-    libcunit1-dev \
-    libffi7 \
-    libfreetype6 \
-    libgraphicsmagick++1-dev \
-    libhidapi-libusb0 \
-    libinput10 \
-    libjpeg8 \
-    liblapack3 \
-    libmnl0 \
-    libmnl-dev \
-    libncurses5-dev \
-    libode-dev \
-    libopenblas0 \
-    libopencv-dev=4.5.4+dfsg-9ubuntu4 \
-    libopenmpi3 \
-    libpcap-dev \
-    libpcl-dev \
-    libpython3.10 \
-    libsuitesparse-dev \
-    libtinyxml2-dev \
-    libturbojpeg \
-    libunwind8 \
-    libv4l-0 \
-    libv4l-dev \
-    libx264-dev \
-    libxaw7-dev \
-    libyaml-cpp-dev \
-    linuxptp \
-    llvm-14 \
-    nlohmann-json3-dev \
-    patchelf \
-    python3-opencv=4.5.4+dfsg-9ubuntu4 \
-    python3-scipy
+        gfortran \
+        graphicsmagick-libmagick-dev-compat \
+        libasio-dev \
+        libassimp-dev \
+        libatlas3-base \
+        libatlas-base-dev \
+        libblas3 \
+        libboost-all-dev \
+        libboost-dev \
+        libbullet-dev \
+        libceres-dev \
+        libcunit1-dev \
+        libffi8 \
+        libfreetype6 \
+        libgraphicsmagick++1-dev \
+        libhidapi-libusb0 \
+        libinput10 \
+        libjpeg8 \
+        liblapack3 \
+        libmnl0 \
+        libmnl-dev \
+        libncurses5-dev \
+        libode-dev \
+        libopenblas0 \
+        libopencv-dev \
+        libopenmpi3 \
+        libpcap-dev \
+        libpcl-dev \
+        libpython3.12 \
+        libserial-dev \
+        libsuitesparse-dev \
+        libtinyxml2-dev \
+        libturbojpeg \
+        libunwind8 \
+        libv4l-0 \
+        libv4l-dev \
+        libx264-dev \
+        libxaw7-dev \
+        libyaml-cpp-dev \
+        linuxptp \
+        nlohmann-json3-dev \
+        jq \
+        kmod \
+        lcov \
+        llvm-17 \
+        patchelf
 
-# Downgrade to setuptools < 70.0.0
-# https://github.com/pypa/setuptools/issues/4483
-RUN python3 -m pip install -U \
-    setuptools==65.7.0
+# Use system protobuf (no source build — keeps the base layer lean)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+        libabsl-dev \
+        protobuf-compiler \
+        libprotobuf-dev
 
-# Python3 PIP buildtools
-RUN python3 -m pip install -U \
-    Cython \
-    ninja \
-    wheel
+# Textual requires a different version of pygments than installed by apt
+RUN python3 -m pip install --break-system-packages -I pygments textual
 
 # Python3 PIP packages
-RUN python3 -m pip install -U \
-    argcomplete \
-    autopep8 \
-    flake8 \
-    flake8-blind-except \
-    flake8-builtins \
-    flake8-class-newline \
-    flake8-comprehensions \
-    flake8-deprecated \
-    flake8-docstrings \
-    flake8-import-order \
-    flake8-quotes \
-    gpustat==0.6.0 \
-    h11==0.16.0 \
-    importlib_resources \
-    networkx \
-    "numpy>=1.24.4,<2" \
-    numpy-quaternion \
-    onnx \
-    pydocstyle \
-    pymongo \
-    pyyaml \
-    "scipy>=1.7.0" \
-    scikit-image \
-    scikit-learn \
-    "setuptools_scm>=6.2" \
-    tqdm \
-    trimesh \
-    virtualenv==20.26.6 \
-    "warp-lang>=0.9.0" \
-    "yourdfpy>=0.0.53" \
-    opentelemetry-api==1.28.1 \
-    opentelemetry-sdk==1.28.1 \
-    opentelemetry-exporter-otlp
+RUN python3 -m pip install -U --break-system-packages \
+        Cython \
+        ninja \
+        argcomplete \
+        autopep8 \
+        av \
+        gpustat \
+        importlib_resources \
+        kornia \
+        networkx \
+        numpy-quaternion \
+        onnx \
+        onnxscript \
+        posix_ipc \
+        pydantic \
+        pydocstyle \
+        pymongo \
+        pytransform3d \
+        scikit-image \
+        scikit-learn \
+        setuptools_scm \
+        tabulate \
+        tqdm \
+        trimesh \
+        warp-lang==1.9.0 \
+        "yourdfpy>=0.0.53" \
+        opentelemetry-api==1.28.1 \
+        opentelemetry-sdk==1.28.1 \
+        opentelemetry-exporter-otlp
 
-# Add MQTT binaries and libraries
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN ln -sf /usr/lib/python3/dist-packages/numpy/core/include/numpy /usr/include/numpy || true
+
+# MQTT binaries and libraries
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-add-repository ppa:mosquitto-dev/mosquitto-ppa \
     && apt-get update && apt-get install -y \
-    mosquitto \
-    mosquitto-clients
+        mosquitto \
+        mosquitto-clients
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs
-
-# Install Yarn
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+# Node.js + Yarn
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
     echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
     apt-get update && apt-get install -y yarn && \
     corepack enable
 
-# Install CuPy and HDBSCAN
-RUN python3 -m pip install -U \
-    cupy-cuda12x \
-    hdbscan
+# CuPy / cuda-python / HDBSCAN
+RUN python3 -m pip install --break-system-packages -U \
+        cuda-python==13.0.1 \
+        cupy-cuda13x==13.6.0 \
+        hdbscan
 
-# Setup Jetson debian repositories
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-key adv --fetch-key https://repo.download.nvidia.com/jetson/jetson-ota-public.asc ; \
-    if [[ ${PLATFORM} == 'arm64' ]]; then \
-    echo 'deb https://repo.download.nvidia.com/jetson/common r36.4 main' > /etc/apt/sources.list.d/nvidia-l4t-apt-source.list \
-    && echo 'deb https://repo.download.nvidia.com/jetson/t234 r36.4 main' >> /etc/apt/sources.list.d/nvidia-l4t-apt-source.list ; \
-    elif [[ ${PLATFORM} == 'amd64' ]]; then \
-    add-apt-repository "deb http://repo.download.nvidia.com/jetson/x86_64/$(lsb_release -cs) r36.4 main" ; \
-    else \
-    echo "Unrecognized platform: ${PLATFORM}" && exit 1 ; \
-    fi ; \
-    apt-get update
+# Setup Jetson debian repository (L4T)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-key adv --fetch-key https://repo.download.nvidia.com/jetson/jetson-ota-public.asc \
+    && add-apt-repository "deb http://repo.download.nvidia.com/jetson/common ${L4T_RELEASE} main" \
+    && apt-get update
 
-# Setup CUDA repositories
-RUN --mount=type=cache,target=/var/cache/apt \
-    if [[ ${PLATFORM} == 'arm64' ]]; then \
-    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb ; \
-    elif [[ ${PLATFORM} == 'amd64' ]]; then \
-    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb ; \
-    else \
-    echo "Unrecognized platform: ${PLATFORM}" && exit 1 ; \
-    fi ; \
-    dpkg -i cuda-keyring_1.1-1_all.deb && rm -Rf cuda-keyring_1.1-1_all.deb ; \
-    apt-get update
-
-# Install VPI
-RUN --mount=type=cache,target=/var/cache/apt \
-    if [[ ${PLATFORM} == 'arm64' ]]; then \
-    # This is a temporary workaround required to install pva-allow-2 in docker which will not be necessary next release
-    apt-get install pva-allow-2 || true ; \
-    rm /var/lib/dpkg/info/pva-allow-2.post* ; \
-    dpkg --configure pva-allow-2 ; \
-    mkdir -p /etc/pva/allow.d && mkdir -p /tmp/vpi_dev \
-    && cd /tmp/vpi_dev \
-    && wget https://repo.download.nvidia.com/jetson/common/pool/main/v/vpi3-dev/vpi3-dev_3.2.4_arm64.deb \
-    && wget https://repo.download.nvidia.com/jetson/common/pool/main/libn/libnvvpi3/libnvvpi3_3.2.4_arm64.deb \
-    && dpkg -i libnvvpi3_3.2.4_arm64.deb \
-    && dpkg -i vpi3-dev_3.2.4_arm64.deb \
-    && cd /tmp && rm -Rf /tmp/vpi_dev ; \
-    fi ; \
+# TensorRT (dev headers + python bindings; runtime libs come from host/L4T repo)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y \
-    libnvvpi3 \
-    vpi3-dev
+        libnvinfer-dev \
+        libnvinfer-plugin-dev \
+        libnvonnxparsers-dev \
+        python3-libnvinfer-dev
 
-# Install cuDSS
-RUN --mount=type=cache,target=/var/cache/apt \
-    if [[ ${PLATFORM} == 'arm64' ]]; then \
-    wget https://developer.download.nvidia.com/compute/cudss/redist/libcudss/linux-aarch64/libcudss-linux-aarch64-0.3.0.9_cuda12-archive.tar.xz && \
-    tar -xvf libcudss-linux-aarch64-0.3.0.9_cuda12-archive.tar.xz -C /usr/local && \
-    rm libcudss-linux-aarch64-0.3.0.9_cuda12-archive.tar.xz && \
-    cp -r /usr/local/libcudss-linux-aarch64-0.3.0.9_cuda12-archive /usr/local/libcudss-linux-0.3.0.9_cuda12-archive ; \
-    elif [[ ${PLATFORM} == 'amd64' ]]; then \
-    wget https://developer.download.nvidia.com/compute/cudss/redist/libcudss/linux-x86_64/libcudss-linux-x86_64-0.3.0.9_cuda12-archive.tar.xz && \
-    tar -xvf libcudss-linux-x86_64-0.3.0.9_cuda12-archive.tar.xz -C /usr/local && \
-    rm libcudss-linux-x86_64-0.3.0.9_cuda12-archive.tar.xz && \
-    cp -r /usr/local/libcudss-linux-x86_64-0.3.0.9_cuda12-archive /usr/local/libcudss-linux-0.3.0.9_cuda12-archive ; \
-    else \
-    echo "Unrecognized platform: ${PLATFORM}" && exit 1 ; \
-    fi
-
-# Based on cuDSS version (0.3.0.9) and architecture which is not expected to change frequently
-ENV CUDSS_DIR=/usr/local/libcudss-linux-0.3.0.9_cuda12-archive
-ENV CMAKE_PREFIX_PATH=$CUDSS_DIR:$CMAKE_PREFIX_PATH
-ENV LD_LIBRARY_PATH=$CUDSS_DIR/lib:$LD_LIBRARY_PATH
-
-# Install CV-CUDA
-RUN --mount=type=cache,target=/var/cache/apt \
-    cd /tmp ; \
-    if [[ ${PLATFORM} == 'arm64' ]]; then \
-    wget https://github.com/CVCUDA/CV-CUDA/releases/download/v0.5.0-beta/nvcv-lib-0.5.0_beta_DP-cuda12-aarch64-linux.deb && \
-    dpkg -i nvcv-lib-0.5.0_beta_DP-cuda12-aarch64-linux.deb && \
-    wget https://github.com/CVCUDA/CV-CUDA/releases/download/v0.5.0-beta/nvcv-dev-0.5.0_beta_DP-cuda12-aarch64-linux.deb && \
-    dpkg -i nvcv-dev-0.5.0_beta_DP-cuda12-aarch64-linux.deb ; \
-    elif [[ ${PLATFORM} == 'amd64' ]]; then \
-    wget https://github.com/CVCUDA/CV-CUDA/releases/download/v0.5.0-beta/nvcv-lib-0.5.0_beta-cuda12-x86_64-linux.deb && \
-    dpkg -i nvcv-lib-0.5.0_beta-cuda12-x86_64-linux.deb && \
-    wget https://github.com/CVCUDA/CV-CUDA/releases/download/v0.5.0-beta/nvcv-dev-0.5.0_beta-cuda12-x86_64-linux.deb && \
-    dpkg -i nvcv-dev-0.5.0_beta-cuda12-x86_64-linux.deb ; \
-    else \
-    echo "Unrecognized platform: ${PLATFORM}" && exit 1 ; \
-    fi
-
-# --------------------------------------------------------------------------------------------------
-
-FROM common AS extended-arm64
-
-# Update environment
-RUN update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-14 14
-ENV LD_LIBRARY_PATH="/opt/nvidia/vpi3/lib64:${LD_LIBRARY_PATH}"
-ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/tegra:${LD_LIBRARY_PATH}"
-ENV LD_LIBRARY_PATH="/usr/local/cuda-12.6/targets/aarch64-linux/lib:${LD_LIBRARY_PATH}"
-ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/tegra-egl:${LD_LIBRARY_PATH}"
-ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/tegra/weston:${LD_LIBRARY_PATH}"
-ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/lib/aarch64-linux-gnu-host"
 ENV PATH="/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/src/tensorrt/bin:${PATH}"
-
-# Install CUDA packages
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y --no-install-recommends --force-yes \
-    cuda-cudart-12-6 \
-    cuda-libraries-12-6 \
-    cuda-nvml-dev-12-6 \
-    cuda-sanitizer-12-6 \
-    cuda-toolkit-12-6 \
-    libcublas-12-6 \
-    libcudnn9 \
-    libcusparse-12-6 \
-    libnpp-12-6
-
-# Install TensorRT
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y \
-    libnvinfer10 \
-    libnvinfer-plugin10 \
-    libnvonnxparsers10 \
-    libnvinfer-dispatch10 \
-    libnvinfer-bin \
-    tensorrt
-
 ENV TRT_LIB_PATH="/usr/lib/aarch64-linux-gnu"
 ENV TRT_INCLUDE_PATH="/usr/include/aarch64-linux-gnu"
 
-# Install pva-allow-2 as a workaround
-RUN --mount=type=cache,target=/var/cache/apt \
+# VPI (Vision Programming Interface)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y vpi4-dev libnvvpi4
+
+# CV-CUDA
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    cd /tmp \
+    && wget -q https://github.com/CVCUDA/CV-CUDA/releases/download/v${CVCUDA_VERSION}-beta/cvcuda-lib-${CVCUDA_VERSION}-cuda12-aarch64-linux.deb \
+    && dpkg -i cvcuda-lib-${CVCUDA_VERSION}-cuda12-aarch64-linux.deb \
+    && wget -q https://github.com/CVCUDA/CV-CUDA/releases/download/v${CVCUDA_VERSION}-beta/cvcuda-dev-${CVCUDA_VERSION}-cuda12-aarch64-linux.deb \
+    && dpkg -i cvcuda-dev-${CVCUDA_VERSION}-cuda12-aarch64-linux.deb \
+    && rm -f cvcuda-*.deb
+
+# nvshmem (required by PyTorch)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get install -y libnvshmem3-cuda-${CUDA_PKG} libnvshmem3-dev-cuda-${CUDA_PKG}
+ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/nvshmem/${CUDA_PKG}:${LD_LIBRARY_PATH}"
+
+# PyTorch (CUDA 13)
+RUN python3 -m pip install --break-system-packages \
+        torch==2.9.0+cu130 torchvision==0.24.0 --index-url https://download.pytorch.org/whl/cu130
+# add ucx library path for torch
+ENV LD_LIBRARY_PATH="/usr/local/lib:/opt/hpcx/ucx/lib:${LD_LIBRARY_PATH}"
+
+# Triton inference server
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    cd /opt \
+    && wget -q https://isaac.download.nvidia.com/isaac-ros/${ISAAC_ROS_RELEASE}/generic/${TRITON_TARBALL} \
+    && tar -xzf ${TRITON_TARBALL} \
+    && rm ${TRITON_TARBALL}
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get install -y libnccl2 libnccl-dev
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/tritonserver/lib"
+
+# Environment for Jetson tegra runtime libs (mounted by run_dev.sh)
+RUN update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-17 17
+ENV LD_LIBRARY_PATH="/opt/nvidia/vpi4/lib64:/usr/lib/aarch64-linux-gnu/tegra:/usr/local/cuda/targets/sbsa-linux/lib:/usr/lib/aarch64-linux-gnu/tegra-egl:/usr/lib/aarch64-linux-gnu/tegra/weston:/usr/lib/aarch64-linux-gnu-host:${LD_LIBRARY_PATH}"
+
+# NVPL (NVIDIA Performance Libraries — BLAS/LAPACK for arm64)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    cd /opt \
+    && curl -fL "https://isaac.download.nvidia.com/isaac-ros/${ISAAC_ROS_RELEASE}/generic/nvpl_slim_24.04.tar" --output nvpl_slim_24.04.tar \
+    && tar -xf nvpl_slim_24.04.tar \
+    && cp -r nvpl_slim_24.04/lib/* /usr/local/lib \
+    && cp -r nvpl_slim_24.04/include/* /usr/local/include \
+    && rm -rf nvpl_slim_24.04.tar nvpl_slim_24.04
+ENV NVPL_LAPACK_MATH_MODE=PEDANTIC
+
+# pva-allow-2 workaround
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     mkdir -p /tmp/pva && cd /tmp/pva \
-    && wget https://repo.download.nvidia.com/jetson/common/pool/main/p/pva-allow-2/pva-allow-2_2.0.0~rc3_all.deb \
+    && wget -q https://repo.download.nvidia.com/jetson/common/pool/main/p/pva-allow-2/pva-allow-2_2.0.0~rc3_all.deb \
     && dpkg -i pva-allow-2_2.0.0~rc3_all.deb || true \
-    && rm /var/lib/dpkg/info/pva-allow-2.post* \
+    && rm -f /var/lib/dpkg/info/pva-allow-2.post* \
     && dpkg --configure pva-allow-2 \
     && cd /tmp && rm -Rf /tmp/pva
 
+# cuSPARSELt
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get -y install libcusparselt0 libcusparselt-dev
 
-# PyTorch (NV CUDA edition)
-# https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html
-RUN python3 -m pip install --no-cache \
-    https://developer.download.nvidia.cn/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
-
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
-    libb64-0d \
-    libre2-9 \
-    rapidjson-dev \
-    libopenblas-dev \
-    libarchive-dev \
-    libcusparselt0 \
-    libcusparselt-dev
-
-# Install Triton server from https://github.com/triton-inference-server/server/releases/tag/v2.49.0
-RUN  --mount=type=cache,target=/var/cache/apt \
-    cd /opt \
-    && wget https://github.com/triton-inference-server/server/releases/download/v2.49.0/tritonserver2.49.0-igpu.tar.gz \
-    && tar -xzvf tritonserver2.49.0-igpu.tar.gz \
-    && chmod 644 /opt/tritonserver/backends/tensorflow/libtensorflow_cc.so.2 \
-    && chmod 644 /opt/tritonserver/backends/tensorflow/libtensorflow_framework.so.2 \
-    && rm tritonserver2.49.0-igpu.tar.gz
-
-# Remove security vulnerability in Java examples
-RUN rm -rf /opt/tritonserver/clients/java/examples
-
-ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/tritonserver/lib"
-
-# Install boost version >= 1.78 for boost::span
-# Current libboost-dev apt packages are < 1.78, so install from tar.gz
-RUN --mount=type=cache,target=/var/cache/apt \
-    wget -O /tmp/boost.tar.gz \
-    https://archives.boost.io/release/1.80.0/source/boost_1_80_0.tar.gz \
+# Boost >= 1.78 for boost::span (apt ships < 1.78)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    wget -q -O /tmp/boost.tar.gz \
+        https://archives.boost.io/release/${BOOST_VERSION//_/.}/source/boost_${BOOST_VERSION}.tar.gz \
     && (cd /tmp && tar xzf boost.tar.gz) \
-    && cd /tmp/boost_1_80_0 \
+    && cd /tmp/boost_${BOOST_VERSION} \
     && ./bootstrap.sh --prefix=/usr \
     && ./b2 install \
     && rm -rf /tmp/boost*
 
-
-# Install jtop
-RUN python3 -m pip install -U \
-    jetson-stats
+# jtop (Jetson stats)
+RUN python3 -m pip install --break-system-packages -U jetson-stats
 
 # Compile ffmpeg without gpl and nonfree
-RUN apt-get install yasm && wget https://ffmpeg.org/releases/ffmpeg-4.4.2.tar.bz2 && tar xjvf ffmpeg-4.4.2.tar.bz2 && cd ffmpeg-4.4.2 && \
-    ./configure --prefix=/usr --toolchain=hardened --enable-shared \
-    --libdir=/usr/lib/aarch64-linux-gnu --incdir=/usr/include/aarch64-linux-gnu --arch=arm64 \
-    --disable-stripping && make -j 4 && make install
+RUN apt-get install -y yasm \
+    && wget -q https://ffmpeg.org/releases/ffmpeg-4.4.2.tar.bz2 \
+    && tar xjf ffmpeg-4.4.2.tar.bz2 && cd ffmpeg-4.4.2 \
+    && ./configure --prefix=/usr --toolchain=hardened --enable-shared \
+        --libdir=/usr/lib/aarch64-linux-gnu --incdir=/usr/include/aarch64-linux-gnu --arch=arm64 \
+        --disable-stripping \
+    && make -j "$(nproc)" && make install \
+    && cd / && rm -rf /ffmpeg-4.4.2*
 
 # --------------------------------------------------------------------------------------------------
-
-FROM common AS extended-amd64
-
-# Update environment
-ENV TRT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
-ENV TRT_INC_PATH="/usr/include/x86_64-linux-gnu"
-
-
-# Install nvv4l2 for GXF Multimedia h264 codec
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y \
-    nvv4l2 \
-    && ln -s /usr/lib/x86_64-linux-gnu/libnvcuvid.so.1 /usr/lib/x86_64-linux-gnu/libnvcuvid.so \
-    && ln -s /usr/lib/x86_64-linux-gnu/libnvidia-encode.so.1 /usr/lib/x86_64-linux-gnu/libnvidia-encode.so
-
-# Pytorch
-RUN python3 -m pip install -U --extra-index-url https://download.pytorch.org/whl/cu121 \
-    torch \
-    torchvision \
-    torchaudio
-
-# Update environment
-ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/tritonserver/lib"
-
-# Compile a ffmpeg without gpl and nonfree
-RUN apt-get install -y yasm && wget https://ffmpeg.org/releases/ffmpeg-4.4.2.tar.bz2 && tar xjvf ffmpeg-4.4.2.tar.bz2 && cd ffmpeg-4.4.2 && \
-    ./configure --prefix=/usr --toolchain=hardened --enable-shared \
-    --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 \
-    --disable-stripping && make -j 4 && make install
-
-# Install yq
-RUN wget -nv https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq \
-    && chmod +x /usr/local/bin/yq
-
+# Container user + entrypoint plumbing
 # --------------------------------------------------------------------------------------------------
-
-FROM extended-${PLATFORM} AS base
-
-# Install Ceres
-RUN git clone https://github.com/ceres-solver/ceres-solver.git && \
-    cd ceres-solver && \
-    git checkout 6fb3dae4eeef855568e47ebbb29a8ba4f3c9153f && \
-    mkdir build && \
-    cd build && \
-    cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BENCHMARKS=OFF -DUSE_CUDA=ON -Dcudss_DIR=$CUDSS_DIR && \
-    make -j 4 && \
-    make install && \
-    sed -i 's/find_dependency(cudss 0.3.0)/find_dependency(cudss)/' /usr/local/lib/cmake/Ceres/CeresConfig.cmake
-
-# Install Protobuf
-# v5.26.0 is same tag as v26.0
-RUN git clone https://github.com/protocolbuffers/protobuf.git -b v5.26.0 && \
-    cd protobuf && \
-    git submodule update --init --recursive && \
-    mkdir build && \
-    cd build && \
-    cmake .. \
-    -Dprotobuf_BUILD_TESTS=OFF \
-    -Dprotobuf_MSVC_STATIC_RUNTIME=OFF \
-    -DABSL_PROPAGATE_CXX_STD=ON \
-    -Dprotobuf_BUILD_SHARED_LIBS=ON \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON && \
-    cmake --build . --config Release && \
-    make install
 
 # Specify non-root admin user for container
 ARG USERNAME=admin
 ENV USERNAME=${USERNAME}
 
 # Install prerequisites
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y \
-    gosu \
-    sudo \
-    udev
+        gosu \
+        sudo \
+        udev \
+        can-utils
 
 # Copy scripts
 RUN mkdir -p /usr/local/bin/scripts
 COPY scripts/*entrypoint.sh /usr/local/bin/scripts/
 RUN chmod +x /usr/local/bin/scripts/*.sh || true
 
-# Copy script additions
-RUN mkdir -p /usr/local/bin/scripts/entrypoint_additions
-COPY scripts/entrypoint_addition[s]/*.sh /usr/local/bin/scripts/entrypoint_additions/
-RUN chmod +x /usr/local/bin/scripts/entrypoint_additions/*.sh || true
-
 # Copy middleware profiles
 RUN mkdir -p /usr/local/share/middleware_profiles
-COPY middleware_profile[s]/*profile.xml /usr/local/share/middleware_profiles/
+COPY middleware_profiles/*profile.xml /usr/local/share/middleware_profiles/
+
+# "Temporary" fix for yaml-cpp error on arm64
+RUN echo "export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libyaml-cpp.so.0.8" >> /etc/bash.bashrc
 
 # Store list of packages (must be last)
 RUN mkdir -p /opt/nvidia/isaac_ros_dev_base && dpkg-query -W | sort > /opt/nvidia/isaac_ros_dev_base/base-end-packages.csv

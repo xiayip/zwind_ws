@@ -1,182 +1,142 @@
-ARG PLATFORM=amd64
-ARG BASE_IMAGE="ubuntu:22.04"
-FROM ${BASE_IMAGE} AS base_image
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+# ==================================================================================================
+# Dockerfile.zwind — Zwind robot-specific layer (ROS 2 Jazzy / Ubuntu 24.04, aarch64)
+#
+# Builds on top of Dockerfile.ros2_jazzy. The ROS 2, Yarn and Isaac ROS apt repositories are
+# already configured by the lower layers, so this layer only adds packages.
+# ==================================================================================================
+
+ARG BASE_IMAGE="ubuntu:24.04"
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-c"]
 
 # ==================================================================================================
-# 1. APT Repository Setup (GPG keys & source lists)
+# 1. System Libraries
 # ==================================================================================================
-
-# ROS 2 Humble repository
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-        -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-        http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
-        > /etc/apt/sources.list.d/ros2.list
-
-# Yarn repository
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg \
-        | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] \
-        https://dl.yarnpkg.com/debian/ stable main" \
-        > /etc/apt/sources.list.d/yarn.list
-
-# Isaac ROS repository (clean stale entries first)
-RUN rm -rf /var/lib/apt/lists/* && \
-    sed -i '/isaac-ros\/release-3/d' /etc/apt/sources.list
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y --no-install-recommends wget gnupg && \
-    wget -qO - https://isaac.download.nvidia.com/isaac-ros/repos.key \
-        | gpg --dearmor -o /usr/share/keyrings/isaac-ros.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/isaac-ros.gpg] \
-        https://isaac.download.nvidia.com/isaac-ros/release-3 \
-        $(. /etc/os-release && echo $VERSION_CODENAME) release-3.0" \
-        > /etc/apt/sources.list.d/isaac-ros.list && \
-    apt-get update
-
-# ==================================================================================================
-# 2. System Libraries
-# ==================================================================================================
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Build / networking utilities
-    bc \
-    can-utils \
-    iproute2 \
-    net-tools \
-    # Boost / PCL / math
-    libboost-dev \
-    libgeographic-dev \
-    libpcl-dev \
-    libpcap-dev \
-    # Audio
-    espeak \
-    portaudio19-dev \
-    # GStreamer
-    libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev \
-    libgstreamer-plugins-good1.0-dev \
-    # Draco 3D compression
-    libdraco-dev \
-    # KDL / optimization / logging
-    libgoogle-glog-dev \
-    libnlopt-cxx-dev \
-    liborocos-kdl-dev \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        # Build / networking utilities
+        bc \
+        can-utils \
+        iproute2 \
+        net-tools \
+        # Boost / PCL / math
+        libboost-dev \
+        libgeographiclib-dev \
+        libpcl-dev \
+        libpcap-dev \
+        # Audio
+        espeak \
+        portaudio19-dev \
+        # GStreamer
+        libgstreamer1.0-dev \
+        libgstreamer-plugins-base1.0-dev \
+        libgstreamer-plugins-good1.0-dev \
+        # Draco 3D compression
+        libdraco-dev \
+        # KDL / optimization / logging
+        libgoogle-glog-dev \
+        libnlopt-cxx-dev \
+        liborocos-kdl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ==================================================================================================
-# 3. ROS 2 Humble Packages
+# Foxglove Agent
 # ==================================================================================================
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Dev tools
-    ros-humble-ament-clang-format \
-    ros-humble-ament-cmake-clang-format \
-    # Navigation
-    ros-humble-nav2* \
-    ros-humble-nav2-bringup \
-    ros-humble-twist-mux \
-    ros-humble-joy-linux \
-    ros-humble-teleop-twist-joy \
-    ros-humble-geographic-msgs \
-    # Controllers & kinematics
-    ros-humble-ros2-controllers \
-    ros-humble-kdl-parser \
-    ros-humble-osqp-vendor \
-    ros-humble-ruckig \
-    # Perception
-    ros-humble-pcl-ros \
-    ros-humble-sophus \
-    # Visualization / debugging
-    ros-humble-foxglove-bridge \
-    ros-humble-plotjuggler-ros \
+RUN wget -O /tmp/foxglove-agent.deb https://get.foxglove.dev/agent/v1.4.9/foxglove-agent_1.4.9-1_arm64.deb \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends /tmp/foxglove-agent.deb \
+ && rm /tmp/foxglove-agent.deb
+
+# ==================================================================================================
+# 2. ROS 2 Jazzy Packages
+# ==================================================================================================
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        # Dev tools
+        ros-jazzy-ament-clang-format \
+        ros-jazzy-ament-cmake-clang-format \
+        # Navigation
+        ros-jazzy-nav2-bringup \
+        ros-jazzy-twist-mux \
+        ros-jazzy-joy-linux \
+        ros-jazzy-teleop-twist-joy \
+        ros-jazzy-geographic-msgs \
+        # Controllers & kinematics
+        ros-jazzy-ros2-controllers \
+        ros-jazzy-kdl-parser \
+        ros-jazzy-osqp-vendor \
+        ros-jazzy-ruckig \
+        # Perception
+        ros-jazzy-pcl-ros \
+        ros-jazzy-sophus \
+        # Visualization / debugging
+        ros-jazzy-foxglove-bridge \
+        ros-jazzy-plotjuggler-ros \
+    && rm -rf /var/lib/apt/lists/*
+
+# Full Nav2 metapackage (separate layer — large, changes rarely)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ros-jazzy-navigation2 \
     && rm -rf /var/lib/apt/lists/*
 
 # ==================================================================================================
-# 4. Isaac ROS Packages
+# 3. Isaac ROS Packages (release-4.0, Jazzy)
 # ==================================================================================================
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Image / depth processing
-    ros-humble-isaac-ros-common \
-    ros-humble-isaac-ros-data-replayer \
-    ros-humble-isaac-ros-depth-image-proc \
-    ros-humble-isaac-ros-image-proc \
-    ros-humble-isaac-ros-h264-decoder \
-    ros-humble-isaac-ros-h264-encoder \
-    # Motion planning
-    ros-humble-isaac-ros-cumotion-moveit \
-    # Nova Carter robot
-    ros-humble-gxf-isaac-segway \
-    ros-humble-isaac-ros-segway-rmp \
-    ros-humble-nova-carter-bringup \
-    ros-humble-nova-carter-description \
-    ros-humble-nova-carter-docking \
-    ros-humble-nova-carter-navigation \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        # Image / depth processing
+        ros-jazzy-isaac-ros-common \
+        ros-jazzy-isaac-ros-depth-image-proc \
+        ros-jazzy-isaac-ros-image-proc \
+        ros-jazzy-isaac-ros-h264-decoder \
+        ros-jazzy-isaac-ros-h264-encoder \
+        # Motion planning
+        ros-jazzy-isaac-ros-cumotion-moveit \
     && rm -rf /var/lib/apt/lists/*
 
 # ==================================================================================================
-# 5. Node.js 22 & OpenClaw
+# 4. Node.js 22 & OpenClaw
 # ==================================================================================================
-# Base image ships Node 18; we need 22+ for openclaw.
-# Must purge old nodejs first — apt won't auto-upgrade across major versions.
-RUN apt-get purge -y nodejs && \
+# The base layer ships Node 20; openclaw needs 22+.
+# Purge first — apt won't auto-upgrade across major versions.
+RUN apt-get purge -y nodejs || true && \
     rm -f /etc/apt/sources.list.d/nodesource.list && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    for i in 1 2 3; do curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh && break || sleep 5; done && \
+    test -s /tmp/nodesource_setup.sh && \
+    bash /tmp/nodesource_setup.sh && \
+    rm -f /tmp/nodesource_setup.sh && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/* && \
     node --version && npm --version
 RUN npm install -g openclaw@latest
 
 # ==================================================================================================
-# 6. Python Packages (pip)
+# 5. Python Packages (pip)
 # ==================================================================================================
-RUN python3 -m pip install --no-cache-dir --upgrade pip && \
-    python3 -m pip install --no-cache-dir \
+ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
+RUN python3 -m pip install --break-system-packages --no-cache-dir --upgrade --ignore-installed pip && \
+    python3 -m pip install --break-system-packages --no-cache-dir --ignore-installed \
         livekit==1.1.5 \
         livekit-api==1.1.0 \
         supabase==2.30.0
 
-# ==================================================================================================
-# 7. Platform Bug Fixes
-# ==================================================================================================
-# Fix MPI include path on x86_64
-# https://forums.developer.nvidia.com/t/mpi-compile-include-path-error-with-nvidia-container-runtime/303541/2
-RUN mkdir -p /opt/hpcx/ompi/lib/x86_64-linux-gnu && \
-    ln -s /opt/hpcx/ompi /opt/hpcx/ompi/lib/x86_64-linux-gnu/openmpi
-
-# ==================================================================================================
-# 8. aarch64 stage  (Jetson — JetPack 6.1)
-# ==================================================================================================
-FROM base_image AS pytorch-arm64
-
-ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-
-# LeRobot (installed first — may pull an incompatible PyTorch version)
-RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir lerobot
-
-# Override with the correct PyTorch + torchvision for JetPack 6.1
-RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir 'numpy<2.0' && \
-    python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir \
-        https://developer.download.nvidia.cn/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
-RUN git clone --branch=v0.20.0 --depth=1 https://github.com/pytorch/vision /tmp/torchvision && \
-    cd /tmp/torchvision && python3 setup.py install && \
-    rm -rf /tmp/torchvision
-
-# Verify
-RUN python3 -c 'import torch; import torchvision; print(f"PyTorch: {torch.__version__}, torchvision: {torchvision.__version__}")'
-
-# ==================================================================================================
-# 9. x86_64 stage  (standard PyTorch from PyPI)
-# ==================================================================================================
-FROM base_image AS pytorch-amd64
-
-RUN python3 -m pip install --no-cache-dir lerobot
-
-# ==================================================================================================
-# 10. Final stage — select based on PLATFORM
-# ==================================================================================================
-FROM pytorch-${PLATFORM}
-
-ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+# LeRobot — installed last (may pull an incompatible torch); restore CUDA-13 torch afterwards
+RUN python3 -m pip install --break-system-packages -i ${TSINGHUA_MIRROR} --no-cache-dir lerobot || \
+    python3 -m pip install --break-system-packages --no-cache-dir lerobot
+RUN python3 -c 'import torch, torchvision; print(f"PyTorch: {torch.__version__}, torchvision: {torchvision.__version__}")'
 
 # Runtime Python deps (change frequently → keep in a separate layer)
-# Try Tsinghua mirror first, fallback to official PyPI if 403/timeout
-RUN python3 -m pip install -i ${TSINGHUA_MIRROR} --no-cache-dir sounddevice 'setuptools==70.0.0' || \
-    python3 -m pip install --no-cache-dir sounddevice 'setuptools==70.0.0'
+RUN python3 -m pip install --break-system-packages -i ${TSINGHUA_MIRROR} --no-cache-dir sounddevice || \
+    python3 -m pip install --break-system-packages --no-cache-dir sounddevice
