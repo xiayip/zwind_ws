@@ -20,10 +20,6 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zwind_manipulation/online_signal_smoothing.git
         version: main
-    src/zwind_manipulation/lerobot:
-        type: git
-        url: https://github.com/huggingface/lerobot.git
-        version: main
     src/zwind_manipulation/lerobot_zwind:
         type: git
         url: git@jihulab.com:robot_group/zwind_manipulation/lerobot_zwind.git

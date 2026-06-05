@@ -74,6 +74,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         # Controllers & kinematics
         ros-jazzy-ros2-controllers \
         ros-jazzy-kdl-parser \
+        ros-jazzy-moveit-task-constructor-capabilities \
+        ros-jazzy-moveit-task-constructor-core \
+        ros-jazzy-moveit-task-constructor-msgs \
+        ros-jazzy-moveit-task-constructor-visualization \
         ros-jazzy-osqp-vendor \
         ros-jazzy-ruckig \
         # Perception
