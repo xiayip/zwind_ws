@@ -10,8 +10,8 @@ docker login registry.jihulab.com -u gitlab+deploy-token-14567 -p gldt-2MGMFUpyC
 
 # Pull image from registry
 PLATFORM="$(uname -m)"
-IMAGE_REMOTE="registry.jihulab.com/robot_group/zwind_ws/isaac_ros_dev-$PLATFORM:latest"
-IMAGE_LOCAL="isaac_ros_dev-$PLATFORM:latest"
+IMAGE_REMOTE="registry.jihulab.com/robot_group/zwind_ws/zephyr_dev_24.04-$PLATFORM:latest"
+IMAGE_LOCAL="zephyr_dev_24.04-$PLATFORM:latest"
 
 # Pull image with retry logic
 MAX_RETRIES=10
