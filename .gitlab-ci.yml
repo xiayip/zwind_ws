@@ -15,7 +15,7 @@ variables:
     - echo "🔨 Building Docker image for platform ${PLATFORM}"
     - cd ${CI_PROJECT_DIR}
     - ./scripts/build_image.sh
-    - docker image ls | grep "${IMAGE_LOCAL}"
+    - docker image inspect "${IMAGE_LOCAL}" >/dev/null
     - echo "✅ Build done — ${IMAGE_LOCAL}"
 
 build:x86_64:
