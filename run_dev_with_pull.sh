@@ -6,34 +6,35 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 export ISAAC_ROS_WS="$(pwd)/.."
 
 # Login to the Docker registry
-docker login registry.jihulab.com -u gitlab+deploy-token-14567 -p gldt-2MGMFUpyCsmerext2sK6
+REGISTRY="registry.jihulab.com"
+REGISTRY_USER="${REGISTRY_USER:-gitlab+deploy-token-14567}"
+REGISTRY_PASSWORD="${REGISTRY_PASSWORD:-gldt-2MGMFUpyCsmerext2sK6}"
+
+printf '%s\n' "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGISTRY_USER" --password-stdin
 
 # Pull image from registry
 PLATFORM="$(uname -m)"
-IMAGE_REMOTE="registry.jihulab.com/robot_group/zwind_ws/zephyr_dev_24.04-$PLATFORM:latest"
+IMAGE_REMOTE="$REGISTRY/robot_group/zwind_ws/zephyr_dev_24.04-$PLATFORM:latest"
 IMAGE_LOCAL="zephyr_dev_24.04-$PLATFORM:latest"
 
 # Pull image with retry logic
-MAX_RETRIES=10
-RETRY_COUNT=0
-RETRY_DELAY=10
+MAX_RETRIES="${MAX_RETRIES:-30}"
+RETRY_DELAY="${RETRY_DELAY:-30}"
 
 echo "🔄 Pulling image: $IMAGE_REMOTE"
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-  docker pull "$IMAGE_REMOTE"
-  if [ $? -eq 0 ]; then
+for (( attempt=1; attempt<=MAX_RETRIES; attempt++ )); do
+  if docker pull "$IMAGE_REMOTE"; then
     echo "✅ Successfully pulled: $IMAGE_REMOTE"
     break
-  else
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-      echo "⚠️  Pull failed (attempt $RETRY_COUNT/$MAX_RETRIES). Retrying in ${RETRY_DELAY}s..."
-      sleep $RETRY_DELAY
-    else
-      echo "❌ Failed to pull the image after $MAX_RETRIES attempts. Please check network or image name."
-      exit 1
-    fi
   fi
+
+  if [ "$attempt" -eq "$MAX_RETRIES" ]; then
+    echo "❌ Failed to pull the image after $MAX_RETRIES attempts. Please check network or image name."
+    exit 1
+  fi
+
+  echo "⚠️  Pull failed (attempt $attempt/$MAX_RETRIES). Retrying in ${RETRY_DELAY}s..."
+  sleep "$RETRY_DELAY"
 done
 
 docker tag "$IMAGE_REMOTE" "$IMAGE_LOCAL"
