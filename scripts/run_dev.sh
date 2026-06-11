@@ -45,14 +45,9 @@ if [[ $(id -u) -eq 0 ]]; then
     exit 1
 fi
 
-RE="\<docker\>"
-if [[ ! $(groups "$USER") =~ $RE ]]; then
-    print_error "User |$USER| is not in the 'docker' group."
-    print_error "Run: sudo usermod -aG docker \$USER && newgrp docker"
-    exit 1
-fi
+source "${SCRIPT_DIR}/ensure_docker.sh"
 
-if [[ -z "$(docker ps 2>/dev/null)" ]]; then
+if ! docker ps >/dev/null 2>&1; then
     print_error "Unable to run docker commands. Check your Docker installation."
     exit 1
 fi

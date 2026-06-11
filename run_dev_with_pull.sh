@@ -10,6 +10,8 @@ REGISTRY="registry.jihulab.com"
 REGISTRY_USER="${REGISTRY_USER:-gitlab+deploy-token-14567}"
 REGISTRY_PASSWORD="${REGISTRY_PASSWORD:-gldt-2MGMFUpyCsmerext2sK6}"
 
+source "./scripts/ensure_docker.sh"
+
 printf '%s\n' "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGISTRY_USER" --password-stdin
 
 # Pull image from registry

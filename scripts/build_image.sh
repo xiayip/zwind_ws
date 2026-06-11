@@ -34,6 +34,8 @@ if [[ "$PLATFORM" != "aarch64" ]]; then
     exit 1
 fi
 
+source "${SCRIPT_DIR}/ensure_docker.sh"
+
 FINAL_IMAGE="zephyr_dev_24.04-${PLATFORM}:latest"
 
 BUILD_ARGS=("--build-arg" "USERNAME=admin")
