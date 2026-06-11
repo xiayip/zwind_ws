@@ -1,3 +1,1 @@
 -v /home/nvidia/.ssh:/home/admin/.ssh:ro
--v /home/nvidia/zwind_ws/openclaw_data:/home/admin/.openclaw
-#--env-file /etc/zwind/robot.env

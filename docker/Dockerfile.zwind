@@ -110,23 +110,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # ==================================================================================================
-# 4. Node.js 22 & OpenClaw
-# ==================================================================================================
-# The base layer ships Node 20; openclaw needs 22+.
-# Purge first — apt won't auto-upgrade across major versions.
-RUN apt-get purge -y nodejs || true && \
-    rm -f /etc/apt/sources.list.d/nodesource.list && \
-    for i in 1 2 3; do curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh && break || sleep 5; done && \
-    test -s /tmp/nodesource_setup.sh && \
-    bash /tmp/nodesource_setup.sh && \
-    rm -f /tmp/nodesource_setup.sh && \
-    apt-get install -y --no-install-recommends nodejs && \
-    rm -rf /var/lib/apt/lists/* && \
-    node --version && npm --version
-RUN npm install -g openclaw@latest
-
-# ==================================================================================================
-# 5. Python Packages (pip)
+# 4. Python Packages (pip)
 # ==================================================================================================
 ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 

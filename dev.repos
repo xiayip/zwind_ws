@@ -107,9 +107,3 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/z1/z1_moveit_config.git
         version: main
-
-    # openclaw config
-    openclaw_data/workspace:
-        type: git
-        url: git@jihulab.com:robot_group/zwind_ai/openclaw-config.git
-        version: master

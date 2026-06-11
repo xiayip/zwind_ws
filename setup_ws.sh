@@ -25,5 +25,4 @@ vcs import < dev.repos --skip-existing --repos --debug
 # Configure extra docker run arguments
 cat > ./docker/.dockerargs <<EOF
 -v $HOME/.ssh:/home/admin/.ssh:ro
--v $(pwd)/openclaw_data:/home/admin/.openclaw
 EOF
