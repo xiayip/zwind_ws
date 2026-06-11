@@ -178,6 +178,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN python3 -m pip install --break-system-packages -I pygments textual
 
 # Python3 PIP packages
+# NOTE: kornia is intentionally NOT here — it depends on torch and would pull a duplicate
+#       multi-GB torch from PyPI. It is installed after the official torch cu130 below.
 RUN python3 -m pip install -U --break-system-packages \
         Cython \
         ninja \
@@ -186,7 +188,6 @@ RUN python3 -m pip install -U --break-system-packages \
         av \
         gpustat \
         importlib_resources \
-        kornia \
         networkx \
         numpy-quaternion \
         onnx \
@@ -270,6 +271,9 @@ ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/nvshmem/${CUDA_PKG}:${LD_LIBRARY
 # PyTorch (CUDA 13)
 RUN python3 -m pip install --break-system-packages \
         torch==2.9.0+cu130 torchvision==0.24.0 --index-url https://download.pytorch.org/whl/cu130
+# kornia depends on torch — install it here so it reuses the cu130 torch above instead of
+# pulling a duplicate torch (+ nvidia CUDA wheels) from PyPI
+RUN python3 -m pip install --break-system-packages kornia
 # add ucx library path for torch
 ENV LD_LIBRARY_PATH="/usr/local/lib:/opt/hpcx/ucx/lib:${LD_LIBRARY_PATH}"
 
