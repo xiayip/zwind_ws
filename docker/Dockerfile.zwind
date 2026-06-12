@@ -128,3 +128,8 @@ RUN python3 -c 'import torch, torchvision; print(f"PyTorch: {torch.__version__},
 # Runtime Python deps (change frequently → keep in a separate layer)
 RUN python3 -m pip install --break-system-packages -i ${TSINGHUA_MIRROR} --no-cache-dir sounddevice || \
     python3 -m pip install --break-system-packages --no-cache-dir sounddevice
+
+# Re-pin setuptools LAST: lerobot/livekit/supabase above can upgrade setuptools to a version that
+# breaks colcon's `--symlink-install` (it runs `setup.py develop --editable`, which newer setuptools
+# no longer accepts → "error: option --editable not recognized"). 68.1.2 matches ROS 2 Jazzy.
+RUN python3 -m pip install --break-system-packages --no-cache-dir --force-reinstall 'setuptools==68.1.2'
