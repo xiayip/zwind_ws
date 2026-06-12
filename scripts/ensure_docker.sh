@@ -147,6 +147,84 @@ function enable_sudo_docker_fallback {
     export -f docker
 }
 
+# Ensure the NVIDIA container runtime is installed and registered as Docker's default runtime.
+# Required so containers can be launched with `--runtime nvidia` (GPU access on Jetson).
+# See: https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
+function ensure_nvidia_runtime {
+    # Already registered? Nothing to do.
+    if docker info 2>/dev/null | grep -qiw nvidia; then
+        return 0
+    fi
+
+    print_warning "Docker 'nvidia' runtime not found. Configuring the NVIDIA Container Toolkit..."
+
+    # Install nvidia-container-toolkit if nvidia-ctk is missing
+    if ! command -v nvidia-ctk >/dev/null 2>&1; then
+        if ! command -v apt-get >/dev/null 2>&1; then
+            print_error "nvidia-container-toolkit is not installed and apt-get is unavailable. Install it manually."
+            exit 1
+        fi
+
+        print_info "Installing nvidia-container-toolkit from the NVIDIA apt repository..."
+        local keyring="/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
+        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+            | sudo gpg --dearmor --yes -o "$keyring"
+        sudo chmod a+r "$keyring"
+        curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+            | sed "s#deb https://#deb [signed-by=${keyring}] https://#g" \
+            | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list >/dev/null
+        sudo apt-get update
+        sudo apt-get install -y nvidia-container-toolkit
+    fi
+
+    # Register the 'nvidia' runtime and set it as Docker's default runtime.
+    # nvidia-ctk merges into any existing /etc/docker/daemon.json.
+    print_info "Registering the 'nvidia' runtime as Docker's default runtime..."
+    sudo nvidia-ctk runtime configure --runtime=docker --set-as-default
+
+    # Restart Docker to apply the new runtime configuration.
+    print_info "Restarting the Docker service to apply the runtime configuration..."
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files docker.service >/dev/null 2>&1; then
+        sudo systemctl restart docker
+    elif command -v service >/dev/null 2>&1; then
+        sudo service docker restart
+    fi
+
+    if ! docker info 2>/dev/null | grep -qiw nvidia; then
+        print_error "Configured the NVIDIA runtime but Docker still does not report it. Check /etc/docker/daemon.json and the Docker service."
+        exit 1
+    fi
+    print_info "NVIDIA Docker runtime is configured."
+}
+
+# Ensure a CDI spec exposing 'nvidia.com/gpu' exists (Jetson / aarch64).
+# run_dev.sh launches the container with `NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all`, which the
+# runtime resolves via the CDI spec at /etc/cdi/nvidia.yaml. On a fresh Jetson this file may be
+# missing or incomplete, causing "unresolvable CDI devices" — regenerate it with nvidia-ctk.
+function ensure_nvidia_cdi {
+    # Only relevant on Jetson / aarch64
+    [[ "$(uname -m)" == "aarch64" ]] || return 0
+
+    if ! command -v nvidia-ctk >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Already resolvable? Nothing to do.
+    if nvidia-ctk cdi list 2>/dev/null | grep -qx "nvidia.com/gpu=all"; then
+        return 0
+    fi
+
+    print_warning "CDI device 'nvidia.com/gpu=all' not found. Generating CDI spec..."
+    sudo mkdir -p /etc/cdi
+    sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml >/dev/null 2>&1
+
+    if ! nvidia-ctk cdi list 2>/dev/null | grep -qx "nvidia.com/gpu=all"; then
+        print_error "Failed to generate a usable CDI spec at /etc/cdi/nvidia.yaml. Check 'nvidia-ctk cdi generate' output."
+        exit 1
+    fi
+    print_info "CDI spec generated (nvidia.com/gpu=all available)."
+}
+
 if ! command -v docker >/dev/null 2>&1; then
     install_docker_apt
 fi
@@ -164,3 +242,6 @@ if ! docker ps >/dev/null 2>&1; then
     print_error "Unable to run docker commands. Check the Docker service and your permissions."
     exit 1
 fi
+
+ensure_nvidia_runtime
+ensure_nvidia_cdi
