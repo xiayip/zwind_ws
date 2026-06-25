@@ -3,6 +3,6 @@
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-export ISAAC_ROS_WS="$(pwd)/.."
+export ZEPHYR_WS="$(pwd)/.."
 
 ./scripts/run_dev.sh

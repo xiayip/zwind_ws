@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==================================================================================================
-# run_dev.sh — Launch the zwind Isaac ROS development container
+# run_dev.sh — Launch the zwind Zephyr development container
 #
 # Usage:
 #   ./scripts/run_dev.sh                  # build image, then run
@@ -15,15 +15,16 @@ WS_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
 source "${SCRIPT_DIR}/print_color.sh"
 
 # --------------- Defaults ------------------------------------------------------------------------
-ISAAC_ROS_DEV_DIR="${ISAAC_ROS_WS:-$(cd "${WS_DIR}/.." && pwd)}"
+ZEPHYR_DEV_DIR="${ZEPHYR_WS:-$(cd "${WS_DIR}/.." && pwd)}"
 SKIP_IMAGE_BUILD=0
 VERBOSE=0
 DOCKER_ARGS=()
+ZEPHYR_CONTAINER_WS_DIR="/workspaces/zephyr-dev"
 
 # --------------- Parse arguments -----------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -d|--isaac_ros_dev_dir) ISAAC_ROS_DEV_DIR="$2"; shift 2 ;;
+        -d|--zephyr_dev_dir)   ZEPHYR_DEV_DIR="$2"; shift 2 ;;
         -b|--skip_image_build)  SKIP_IMAGE_BUILD=1; shift ;;
         -a|--docker_arg)        DOCKER_ARGS+=("$2"); shift 2 ;;
         -v|--verbose)           VERBOSE=1; shift ;;
@@ -35,8 +36,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --------------- Validations ---------------------------------------------------------------------
-if [[ ! -d "$ISAAC_ROS_DEV_DIR" ]]; then
-    print_error "Workspace directory does not exist: $ISAAC_ROS_DEV_DIR"
+if [[ ! -d "$ZEPHYR_DEV_DIR" ]]; then
+    print_error "Workspace directory does not exist: $ZEPHYR_DEV_DIR"
     exit 1
 fi
 
@@ -66,8 +67,8 @@ fi
 # Attach to running container
 if [ "$(docker ps -a --quiet --filter status=running --filter name=$CONTAINER_NAME)" ]; then
     print_info "Attaching to running container: $CONTAINER_NAME"
-    ISAAC_ROS_WS=$(docker exec "$CONTAINER_NAME" printenv ISAAC_ROS_WS)
-    docker exec -it -u admin --workdir "$ISAAC_ROS_WS" "$CONTAINER_NAME" /bin/bash
+    ZEPHYR_WS=$(docker exec "$CONTAINER_NAME" printenv ZEPHYR_WS)
+    docker exec -it -u admin --workdir "$ZEPHYR_WS" "$CONTAINER_NAME" /bin/bash
     exit 0
 fi
 
@@ -100,7 +101,7 @@ DOCKER_ARGS+=("-e NVIDIA_VISIBLE_DEVICES=all")
 DOCKER_ARGS+=("-e NVIDIA_DRIVER_CAPABILITIES=all")
 DOCKER_ARGS+=("-e ROS_DOMAIN_ID")
 DOCKER_ARGS+=("-e USER")
-DOCKER_ARGS+=("-e ISAAC_ROS_WS=/workspaces/isaac_ros-dev")
+DOCKER_ARGS+=("-e ZEPHYR_WS=${ZEPHYR_CONTAINER_WS_DIR}")
 DOCKER_ARGS+=("-e HOST_USER_UID=$(id -u)")
 DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
 
@@ -146,11 +147,11 @@ docker run -it --rm \
     --ipc=host \
     ${DOCKER_ARGS[@]} \
     -v /dev:/dev \
-    -v "$ISAAC_ROS_DEV_DIR":/workspaces/isaac_ros-dev \
+    -v "$ZEPHYR_DEV_DIR":"$ZEPHYR_CONTAINER_WS_DIR" \
     -v /etc/localtime:/etc/localtime:ro \
     --name "$CONTAINER_NAME" \
     --runtime nvidia \
     --entrypoint /usr/local/bin/scripts/workspace-entrypoint.sh \
-    --workdir /workspaces/isaac_ros-dev \
+    --workdir "$ZEPHYR_CONTAINER_WS_DIR" \
     "$BASE_NAME" \
     /bin/bash
