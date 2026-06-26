@@ -7,7 +7,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 # ==================================================================================================
-# Dockerfile.zwind — Zwind robot-specific layer (ROS 2 Jazzy / Ubuntu 24.04, aarch64)
+# Dockerfile.zephyr — Zephyr robot-specific layer (ROS 2 Jazzy / Ubuntu 24.04, aarch64)
 #
 # Builds on top of Dockerfile.ros2_jazzy. The ROS 2, Yarn and Isaac ROS apt repositories are
 # already configured by the lower layers, so this layer only adds packages.

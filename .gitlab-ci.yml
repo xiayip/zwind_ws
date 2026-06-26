@@ -4,7 +4,7 @@ stages:
 
 variables:
   REGISTRY: registry.jihulab.com
-  REGISTRY_IMAGE: ${REGISTRY}/robot_group/zwind_ws/zephyr_dev_24.04
+  REGISTRY_IMAGE: ${REGISTRY}/robot_group/zephyr_ws/zephyr_dev_24.04
   DOCKER_BUILDKIT: 1
 
 # ── Build ────────────────────────────────────────────────────────────────────────

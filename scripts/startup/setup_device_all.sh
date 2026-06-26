@@ -11,6 +11,9 @@ NETWORK_DIR="/etc/systemd/network"
 UDEV_DIR="/etc/udev/rules.d"
 SYSTEMD_DIR="/etc/systemd/system"
 SYSTEMD_SCRIPT_DIR="/etc/systemd"
+DEVICE_SETUP_SERVICE_NAME="${ZEPHYR_DEVICE_SETUP_SERVICE_NAME:-zephyr_device_setup}"
+DEVICE_SETUP_SCRIPT="${DEVICE_SETUP_SERVICE_NAME}.sh"
+DEVICE_SETUP_SERVICE="${DEVICE_SETUP_SERVICE_NAME}.service"
 
 log() {
   echo "[setup] $*"
@@ -83,15 +86,15 @@ copy_file_if_needed "$SCRIPT_DIR/80-can-names.rules" 0644 "$UDEV_DIR/80-can-name
 copy_file_if_needed "$SCRIPT_DIR/99-obsensor-libusb.rules" 0644 "$UDEV_DIR/99-obsensor-libusb.rules"
 copy_file_if_needed "$SCRIPT_DIR/99-odin-usb.rules" 0644 "$UDEV_DIR/99-odin-usb.rules"
 
-log "Installing zwind device setup service files"
+log "Installing device setup service files: $DEVICE_SETUP_SERVICE_NAME"
 mkdir -p "$SYSTEMD_SCRIPT_DIR"
-copy_file_if_needed "$SCRIPT_DIR/zwind_device_setup.sh" 0755 "$SYSTEMD_SCRIPT_DIR/zwind_device_setup.sh"
+copy_file_if_needed "$SCRIPT_DIR/$DEVICE_SETUP_SCRIPT" 0755 "$SYSTEMD_SCRIPT_DIR/$DEVICE_SETUP_SCRIPT"
 mkdir -p "$SYSTEMD_DIR"
-copy_file_if_needed "$SCRIPT_DIR/zwind_device_setup.service" 0644 "$SYSTEMD_DIR/zwind_device_setup.service"
+copy_file_if_needed "$SCRIPT_DIR/$DEVICE_SETUP_SERVICE" 0644 "$SYSTEMD_DIR/$DEVICE_SETUP_SERVICE"
 
 log "Reloading systemd and udev"
 systemctl daemon-reload
-systemctl enable zwind_device_setup
+systemctl enable "$DEVICE_SETUP_SERVICE_NAME"
 
 udevadm control --reload-rules
 udevadm trigger --type=devices --action=add

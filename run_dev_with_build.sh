@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build image layers then launch the dev container
+# Build image layers then launch the Zephyr dev container
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"

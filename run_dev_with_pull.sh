@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pull a pre-built image from registry, then launch the dev container (skip local build)
+# Pull a pre-built image from registry, then launch the Zephyr dev container (skip local build)
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -16,7 +16,8 @@ printf '%s\n' "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGIS
 
 # Pull image from registry
 PLATFORM="$(uname -m)"
-IMAGE_REMOTE="$REGISTRY/robot_group/zwind_ws/zephyr_dev_24.04-$PLATFORM:latest"
+REGISTRY_PROJECT="${REGISTRY_PROJECT:-robot_group/zephyr_ws}"
+IMAGE_REMOTE="${IMAGE_REMOTE:-$REGISTRY/$REGISTRY_PROJECT/zephyr_dev_24.04-$PLATFORM:latest}"
 IMAGE_LOCAL="zephyr_dev_24.04-$PLATFORM:latest"
 
 # Pull image with retry logic

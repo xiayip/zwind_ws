@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==================================================================================================
-# run_dev.sh — Launch the zwind Zephyr development container
+# run_dev.sh — Launch the Zephyr development container
 #
 # Usage:
 #   ./scripts/run_dev.sh                  # build image, then run

@@ -1,109 +1,109 @@
 repositories:
-    # zwind_manipulation
-    src/zwind_manipulation/curobo:
+    # zephyr_manipulation
+    src/zephyr_manipulation/curobo:
         type: git
-        url: git@jihulab.com:robot_group/zwind_manipulation/curobo.git
+        url: git@jihulab.com:robot_group/zephyr_manipulation/curobo.git
         version: main
-    src/zwind_manipulation/moveit_pick_and_place:
+    src/zephyr_manipulation/moveit_pick_and_place:
         type: git
-        url: git@jihulab.com:robot_group/zwind_manipulation/moveit_pick_and_place.git
+        url: git@jihulab.com:robot_group/zephyr_manipulation/moveit_pick_and_place.git
         version: main
-    src/zwind_manipulation/moveit_servo:
+    src/zephyr_manipulation/moveit_servo:
         type: git
-        url: git@jihulab.com:robot_group/zwind_manipulation/moveit_servo.git
+        url: git@jihulab.com:robot_group/zephyr_manipulation/moveit_servo.git
         version: main
-    src/zwind_manipulation/bio_ik:
+    src/zephyr_manipulation/bio_ik:
         type: git
         url: https://github.com/PickNikRobotics/bio_ik.git
         version: ros2
-    src/zwind_manipulation/online_signal_smoothing:
+    src/zephyr_manipulation/online_signal_smoothing:
         type: git
-        url: git@jihulab.com:robot_group/zwind_manipulation/online_signal_smoothing.git
+        url: git@jihulab.com:robot_group/zephyr_manipulation/online_signal_smoothing.git
         version: main
-    src/zwind_manipulation/lerobot_zwind:
+    src/zephyr_manipulation/lerobot_zephyr:
         type: git
-        url: git@jihulab.com:robot_group/zwind_manipulation/lerobot_zwind.git
+        url: git@jihulab.com:robot_group/zephyr_manipulation/lerobot_zephyr.git
         version: main
-    src/zwind_manipulation/lerobot_ros2:
+    src/zephyr_manipulation/lerobot_ros2:
         type: git
-        url: git@jihulab.com:robot_group/zwind_manipulation/lerobot_ros2.git
+        url: git@jihulab.com:robot_group/zephyr_manipulation/lerobot_ros2.git
         version: main
 
-    # zwind_perception
+    # zephyr_perception
     # FAST-LIVO2
-    src/zwind_perception/FAST-LIVO2/FAST-LIVO2:
+    src/zephyr_perception/FAST-LIVO2/FAST-LIVO2:
         type: git
-        url: git@jihulab.com:robot_group/zwind_perception/fast-livo2/fast-livo2.git
+        url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/fast-livo2.git
         version: ros2
-    src/zwind_perception/FAST-LIVO2/rpg_vikit:
+    src/zephyr_perception/FAST-LIVO2/rpg_vikit:
         type: git
-        url: git@jihulab.com:robot_group/zwind_perception/fast-livo2/rpg_vikit.git
+        url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/rpg_vikit.git
         version: ros2
 
-    # zwind_common
-    src/zwind_common/topic_based_ros2_control:
+    # zephyr_common
+    src/zephyr_common/topic_based_ros2_control:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/topic_based_ros2_control.git
+        url: git@jihulab.com:robot_group/zephyr_common/topic_based_ros2_control.git
         version: main
-    src/zwind_common/zwind_msgs:
+    src/zephyr_common/zephyr_msgs:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/zwind_msgs.git
+        url: git@jihulab.com:robot_group/zephyr_common/zephyr_msgs.git
         version: main
-    src/zwind_common/can_hardware_interface:
+    src/zephyr_common/can_hardware_interface:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/can_hardware_interface.git
+        url: git@jihulab.com:robot_group/zephyr_common/can_hardware_interface.git
         version: main
-    src/zwind_common/zwind_controllers:
+    src/zephyr_common/zephyr_controllers:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/zwind_controllers.git
+        url: git@jihulab.com:robot_group/zephyr_common/zephyr_controllers.git
         version: main
-    src/zwind_common/odin1_ros2_driver:
+    src/zephyr_common/odin1_ros2_driver:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/odin1_ros2_driver.git
+        url: git@jihulab.com:robot_group/zephyr_common/odin1_ros2_driver.git
         version: main
-    src/zwind_common/OrbbecSDK_ROS2:
+    src/zephyr_common/OrbbecSDK_ROS2:
         type: git
         url: https://github.com/orbbec/OrbbecSDK_ROS2.git
         version: main
-    src/zwind_common/pointcloud_compressor:
+    src/zephyr_common/pointcloud_compressor:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/pointcloud_compressor.git
+        url: git@jihulab.com:robot_group/zephyr_common/pointcloud_compressor.git
         version: master
-    src/zwind_common/audio_common:
+    src/zephyr_common/audio_common:
         type: git
         url: https://github.com/mgonzs13/audio_common.git
         version: main
-    src/zwind_common/imeta_y1_ros2:
+    src/zephyr_common/imeta_y1_ros2:
         type: git
-        url: git@jihulab.com:robot_group/zwind_common/imeta_y1_ros2.git
+        url: git@jihulab.com:robot_group/zephyr_common/imeta_y1_ros2.git
         version: main
 
-    #zwind_teleop
-    src/zwind_teleop/teleop_rtc:
+    #zephyr_teleop
+    src/zephyr_teleop/teleop_rtc:
         type: git
-        url: git@jihulab.com:robot_group/zwind_teleop/teleop_rtc.git
+        url: git@jihulab.com:robot_group/zephyr_teleop/teleop_rtc.git
         version: main
 
-    #zwind_mission
-    src/zwind_mission/BehaviorTree-ROS2:
+    #zephyr_mission
+    src/zephyr_mission/BehaviorTree-ROS2:
         type: git
-        url: git@jihulab.com:robot_group/zwind_mission/BehaviorTree-ROS2.git
+        url: git@jihulab.com:robot_group/zephyr_mission/BehaviorTree-ROS2.git
         version: humble
-    src/zwind_mission/zwind_bt:
+    src/zephyr_mission/zephyr_bt:
         type: git
-        url: git@jihulab.com:robot_group/zwind_mission/zwind_bt.git
+        url: git@jihulab.com:robot_group/zephyr_mission/zephyr_bt.git
         version: main
 
-    # zwind_z1
-    src/zwind_z1/z1_description:
+    # zephyr_z1
+    src/zephyr_z1/z1_description:
         type: git
         url: git@jihulab.com:robot_group/z1/z1_description.git
         version: main
-    src/zwind_z1/z1_bringup:
+    src/zephyr_z1/z1_bringup:
         type: git
         url: git@jihulab.com:robot_group/z1/z1_bringup.git
         version: main
-    src/zwind_z1/z1_moveit_config:
+    src/zephyr_z1/z1_moveit_config:
         type: git
         url: git@jihulab.com:robot_group/z1/z1_moveit_config.git
         version: main

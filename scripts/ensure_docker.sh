@@ -2,21 +2,26 @@
 # Ensure Docker is installed, running, and usable by the current script.
 set -e
 
-if [[ "${ZWIND_DOCKER_USE_SUDO:-0}" == "1" ]]; then
+ZEPHYR_DOCKER_USE_SUDO="${ZEPHYR_DOCKER_USE_SUDO:-0}"
+ZEPHYR_DOCKER_READY="${ZEPHYR_DOCKER_READY:-0}"
+ZEPHYR_DOCKER_BIN="${ZEPHYR_DOCKER_BIN:-docker}"
+export ZEPHYR_DOCKER_USE_SUDO ZEPHYR_DOCKER_READY ZEPHYR_DOCKER_BIN
+
+if [[ "$ZEPHYR_DOCKER_USE_SUDO" == "1" ]]; then
     function docker {
         if [[ -n "${DOCKER_BUILDKIT+x}" ]]; then
-            sudo env DOCKER_BUILDKIT="$DOCKER_BUILDKIT" "${ZWIND_DOCKER_BIN:-docker}" "$@"
+            sudo env DOCKER_BUILDKIT="$DOCKER_BUILDKIT" "${ZEPHYR_DOCKER_BIN:-docker}" "$@"
         else
-            sudo "${ZWIND_DOCKER_BIN:-docker}" "$@"
+            sudo "${ZEPHYR_DOCKER_BIN:-docker}" "$@"
         fi
     }
     export -f docker
 fi
 
-if [[ "${ZWIND_DOCKER_READY:-0}" == "1" ]]; then
+if [[ "$ZEPHYR_DOCKER_READY" == "1" ]]; then
     return 0 2>/dev/null || exit 0
 fi
-export ZWIND_DOCKER_READY=1
+export ZEPHYR_DOCKER_READY=1
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -133,15 +138,15 @@ function enable_sudo_docker_fallback {
     print_warning "Using sudo docker for this run."
     sudo -v
 
-    ZWIND_DOCKER_BIN="$(command -v docker)"
-    export ZWIND_DOCKER_BIN
-    export ZWIND_DOCKER_USE_SUDO=1
+    ZEPHYR_DOCKER_BIN="$(command -v docker)"
+    ZEPHYR_DOCKER_USE_SUDO=1
+    export ZEPHYR_DOCKER_BIN ZEPHYR_DOCKER_USE_SUDO
 
     function docker {
         if [[ -n "${DOCKER_BUILDKIT+x}" ]]; then
-            sudo env DOCKER_BUILDKIT="$DOCKER_BUILDKIT" "$ZWIND_DOCKER_BIN" "$@"
+            sudo env DOCKER_BUILDKIT="$DOCKER_BUILDKIT" "$ZEPHYR_DOCKER_BIN" "$@"
         else
-            sudo "$ZWIND_DOCKER_BIN" "$@"
+            sudo "$ZEPHYR_DOCKER_BIN" "$@"
         fi
     }
     export -f docker

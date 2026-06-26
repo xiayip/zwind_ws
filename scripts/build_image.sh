@@ -1,11 +1,11 @@
 #!/bin/bash
 # ==================================================================================================
-# build_image.sh — Build the Docker image stack for zwind development (aarch64 / Jetson)
+# build_image.sh — Build the Docker image stack for Zephyr development (aarch64 / Jetson)
 #
 # Build chain (3 layers, built bottom-up — each layer's output is the next layer's BASE_IMAGE):
 #   1. Dockerfile.base         — Platform base (Ubuntu 24.04 noble, CUDA 13, TensorRT, VPI4, Triton)
 #   2. Dockerfile.ros2_jazzy   — ROS 2 Jazzy + MoveIt 2
-#   3. Dockerfile.zwind        — Zwind robot-specific packages
+#   3. Dockerfile.zephyr       — Zephyr robot-specific packages
 #
 # Usage:
 #   ./scripts/build_image.sh [--no-cache]
@@ -37,6 +37,9 @@ fi
 source "${SCRIPT_DIR}/ensure_docker.sh"
 
 FINAL_IMAGE="zephyr_dev_24.04-${PLATFORM}:latest"
+BASE_LAYER_IMAGE="${ZEPHYR_BASE_LAYER_IMAGE:-zephyr-base-image}"
+ROS_LAYER_IMAGE="${ZEPHYR_ROS_LAYER_IMAGE:-zephyr-ros2-jazzy-image}"
+ROBOT_DOCKERFILE="${ZEPHYR_ROBOT_DOCKERFILE:-Dockerfile.zephyr}"
 
 BUILD_ARGS=("--build-arg" "USERNAME=admin")
 
@@ -45,11 +48,11 @@ BUILD_ARGS=("--build-arg" "USERNAME=admin")
 DOCKERFILES=(
     "Dockerfile.base"
     "Dockerfile.ros2_jazzy"
-    "Dockerfile.zwind"
+    "$ROBOT_DOCKERFILE"
 )
 IMAGE_TAGS=(
-    "zwind-base-image"
-    "zwind-ros2-jazzy-image"
+    "$BASE_LAYER_IMAGE"
+    "$ROS_LAYER_IMAGE"
     "${FINAL_IMAGE}"
 )
 
