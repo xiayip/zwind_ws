@@ -18,12 +18,12 @@ variables:
     - docker image inspect "${IMAGE_LOCAL}" >/dev/null
     - echo "✅ Build done — ${IMAGE_LOCAL}"
 
-build:x86_64:
-  <<: *build_common
-  tags:
-    - x86_64-shell
-  variables:
-    PLATFORM: "x86_64"
+# build:x86_64:
+#   <<: *build_common
+#   tags:
+#     - x86_64-shell
+#   variables:
+#     PLATFORM: "x86_64"
 
 build:aarch64:
   <<: *build_common
@@ -52,14 +52,14 @@ build:aarch64:
     - main
     - master
 
-push:x86_64:
-  <<: *push_common
-  needs:
-    - build:x86_64
-  tags:
-    - x86_64-shell
-  variables:
-    PLATFORM: "x86_64"
+# push:x86_64:
+#   <<: *push_common
+#   needs:
+#     - build:x86_64
+#   tags:
+#     - x86_64-shell
+#   variables:
+#     PLATFORM: "x86_64"
 
 push:aarch64:
   <<: *push_common
