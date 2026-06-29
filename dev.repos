@@ -1,9 +1,5 @@
 repositories:
     # zephyr_manipulation
-    src/zephyr_manipulation/curobo:
-        type: git
-        url: git@jihulab.com:robot_group/zephyr_manipulation/curobo.git
-        version: main
     src/zephyr_manipulation/moveit_pick_and_place:
         type: git
         url: git@jihulab.com:robot_group/zephyr_manipulation/moveit_pick_and_place.git
