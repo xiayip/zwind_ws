@@ -202,10 +202,21 @@ function ensure_nvidia_runtime {
     print_info "NVIDIA Docker runtime is configured."
 }
 
+# Print /dev paths referenced by a CDI spec that are missing on the host.
+function nvidia_cdi_missing_host_devices {
+    local cdi_spec="$1"
+    [[ -f "$cdi_spec" ]] || return 0
+
+    awk '/path:[[:space:]]*\/dev\// { print $NF }' "$cdi_spec" | sort -u | while read -r device_path; do
+        [[ -e "$device_path" ]] || printf '%s\n' "$device_path"
+    done
+}
+
 # Ensure a CDI spec exposing 'nvidia.com/gpu' exists (Jetson / aarch64).
 # run_dev.sh launches the container with `NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all`, which the
 # runtime resolves via the CDI spec at /etc/cdi/nvidia.yaml. On a fresh Jetson this file may be
-# missing or incomplete, causing "unresolvable CDI devices" — regenerate it with nvidia-ctk.
+# missing, incomplete, or stale, causing "unresolvable CDI devices" / "failed to stat CDI host
+# device" errors — regenerate it with nvidia-ctk.
 function ensure_nvidia_cdi {
     # Only relevant on Jetson / aarch64
     [[ "$(uname -m)" == "aarch64" ]] || return 0
@@ -214,17 +225,34 @@ function ensure_nvidia_cdi {
         return 0
     fi
 
-    # Already resolvable? Nothing to do.
+    local cdi_spec="/etc/cdi/nvidia.yaml"
+    local missing_devices=""
+
+    missing_devices="$(nvidia_cdi_missing_host_devices "$cdi_spec")"
+
+    # Already resolvable and points only at devices that exist? Nothing to do.
     if nvidia-ctk cdi list 2>/dev/null | grep -qx "nvidia.com/gpu=all"; then
-        return 0
+        if [[ -z "$missing_devices" ]]; then
+            return 0
+        fi
+
+        print_warning "CDI spec references missing host device(s): $(echo "$missing_devices" | paste -sd ',' -)"
+        print_warning "Regenerating CDI spec..."
+    else
+        print_warning "CDI device 'nvidia.com/gpu=all' not found. Generating CDI spec..."
     fi
 
-    print_warning "CDI device 'nvidia.com/gpu=all' not found. Generating CDI spec..."
     sudo mkdir -p /etc/cdi
-    sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml >/dev/null 2>&1
+    sudo nvidia-ctk cdi generate --mode=csv --output="$cdi_spec" >/dev/null 2>&1
 
     if ! nvidia-ctk cdi list 2>/dev/null | grep -qx "nvidia.com/gpu=all"; then
-        print_error "Failed to generate a usable CDI spec at /etc/cdi/nvidia.yaml. Check 'nvidia-ctk cdi generate' output."
+        print_error "Failed to generate a usable CDI spec at $cdi_spec. Check 'nvidia-ctk cdi generate --mode=csv' output."
+        exit 1
+    fi
+
+    missing_devices="$(nvidia_cdi_missing_host_devices "$cdi_spec")"
+    if [[ -n "$missing_devices" ]]; then
+        print_error "Generated CDI spec still references missing host device(s): $(echo "$missing_devices" | paste -sd ',' -)"
         exit 1
     fi
     print_info "CDI spec generated (nvidia.com/gpu=all available)."
