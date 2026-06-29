@@ -5,7 +5,8 @@ set -e
 ZEPHYR_DOCKER_USE_SUDO="${ZEPHYR_DOCKER_USE_SUDO:-0}"
 ZEPHYR_DOCKER_READY="${ZEPHYR_DOCKER_READY:-0}"
 ZEPHYR_DOCKER_BIN="${ZEPHYR_DOCKER_BIN:-docker}"
-export ZEPHYR_DOCKER_USE_SUDO ZEPHYR_DOCKER_READY ZEPHYR_DOCKER_BIN
+ZEPHYR_DOCKER_REQUIRE_NVIDIA="${ZEPHYR_DOCKER_REQUIRE_NVIDIA:-1}"
+export ZEPHYR_DOCKER_USE_SUDO ZEPHYR_DOCKER_READY ZEPHYR_DOCKER_BIN ZEPHYR_DOCKER_REQUIRE_NVIDIA
 
 if [[ "$ZEPHYR_DOCKER_USE_SUDO" == "1" ]]; then
     function docker {
@@ -276,5 +277,7 @@ if ! docker ps >/dev/null 2>&1; then
     exit 1
 fi
 
-ensure_nvidia_runtime
-ensure_nvidia_cdi
+if [[ "$ZEPHYR_DOCKER_REQUIRE_NVIDIA" == "1" ]]; then
+    ensure_nvidia_runtime
+    ensure_nvidia_cdi
+fi

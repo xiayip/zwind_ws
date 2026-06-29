@@ -34,6 +34,8 @@ if [[ "$PLATFORM" != "aarch64" ]]; then
     exit 1
 fi
 
+ZEPHYR_DOCKER_REQUIRE_NVIDIA="${ZEPHYR_DOCKER_REQUIRE_NVIDIA:-0}"
+export ZEPHYR_DOCKER_REQUIRE_NVIDIA
 source "${SCRIPT_DIR}/ensure_docker.sh"
 
 FINAL_IMAGE="zephyr_dev_24.04-${PLATFORM}:latest"
