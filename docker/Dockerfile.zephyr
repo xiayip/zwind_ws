@@ -81,6 +81,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ros-jazzy-osqp-vendor \
         ros-jazzy-ruckig \
         # Perception
+        ros-jazzy-orbbec-camera \
+        ros-jazzy-orbbec-description \
         ros-jazzy-pcl-ros \
         ros-jazzy-sophus \
         # Visualization / debugging
