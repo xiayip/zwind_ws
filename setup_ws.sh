@@ -26,3 +26,7 @@ vcs import < dev.repos --skip-existing --repos --debug
 cat > ./docker/.dockerargs <<EOF
 -v $HOME/.ssh:/home/admin/.ssh:ro
 EOF
+
+# Set up device configuration (udev rules, systemd services, etc.)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+sudo "$SCRIPT_DIR/scripts/startup/setup_device_all.sh"

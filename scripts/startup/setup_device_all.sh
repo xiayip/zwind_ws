@@ -22,15 +22,15 @@ log() {
 write_file_if_needed() {
   local target="$1"
   local content="$2"
+  if [[ -f "$target" ]]; then
+    log "Skipping existing $target"
+    return
+  fi
   local tmp
   tmp="$(mktemp)"
   printf '%s\n' "$content" >"$tmp"
-  if [[ -f "$target" ]] && cmp -s "$tmp" "$target"; then
-    log "Unchanged $target"
-  else
-    install -D -m 0644 "$tmp" "$target"
-    log "Installed $target"
-  fi
+  install -D -m 0644 "$tmp" "$target"
+  log "Installed $target"
   rm -f "$tmp"
 }
 
@@ -38,12 +38,12 @@ copy_file_if_needed() {
   local source="$1"
   local mode="$2"
   local destination="$3"
-  if [[ -f "$destination" ]] && cmp -s "$source" "$destination"; then
-    log "Unchanged $destination"
-  else
-    install -D -m "$mode" "$source" "$destination"
-    log "Installed $destination"
+  if [[ -f "$destination" ]]; then
+    log "Skipping existing $destination"
+    return
   fi
+  install -D -m "$mode" "$source" "$destination"
+  log "Installed $destination"
 }
 
 ensure_binary() {
