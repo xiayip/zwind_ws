@@ -102,6 +102,6 @@ udevadm trigger --type=devices --action=add
 nvidia-ctk cdi generate --mode=csv --output=/etc/cdi/nvidia.yaml
 
 log "You may need to install gs_usb kernel module if not already installed. "
-log "Check: https://github.com/lucianovk/jetson-gs_usb-kernel-builder"
+log "Run: $SCRIPT_DIR/install_gs_usb.sh"
 
 log "Setup complete"
