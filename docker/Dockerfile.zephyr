@@ -99,17 +99,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # ==================================================================================================
 # 3. Isaac ROS Packages (release-4.0, Jazzy)
 # ==================================================================================================
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-        # Image / depth processing
-        ros-jazzy-isaac-ros-common \
-        # ros-jazzy-isaac-ros-depth-image-proc \
-        # ros-jazzy-isaac-ros-image-proc \
-        # ros-jazzy-isaac-ros-h264-decoder \
-        # ros-jazzy-isaac-ros-h264-encoder \
-        # # Motion planning
-        # ros-jazzy-isaac-ros-cumotion-moveit \
-    && rm -rf /var/lib/apt/lists/*
+# RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+#     apt-get update && apt-get install -y --no-install-recommends \
+#         Image / depth processing
+#         ros-jazzy-isaac-ros-common \
+#         ros-jazzy-isaac-ros-apriltag \
+#         ros-jazzy-isaac-ros-depth-image-proc \
+#         ros-jazzy-isaac-ros-image-proc \
+#         ros-jazzy-isaac-ros-h264-decoder \
+#         ros-jazzy-isaac-ros-h264-encoder \
+#         # Motion planning
+#         ros-jazzy-isaac-ros-cumotion-moveit \
+#     && rm -rf /var/lib/apt/lists/*
 
 # ==================================================================================================
 # 4. Python Packages (pip)

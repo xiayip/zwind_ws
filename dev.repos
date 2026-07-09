@@ -73,6 +73,10 @@ repositories:
         type: git
         url: https://github.com/orbbec/OrbbecSDK_ROS2.git
         version: v2-main
+    src/zephyr_common/rmp220_ros2_driver:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/rmp220_ros2_driver.git
+        version: main
 
     #zephyr_teleop
     src/zephyr_teleop/teleop_rtc:
