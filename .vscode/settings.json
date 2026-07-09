@@ -106,5 +106,9 @@
     },
     "ros.distro": "jazzy",
     "github.copilot.chat.codeGeneration.useInstructionFiles": true,
-    "cmake.sourceDirectory": "${workspaceFolder}/build/btcpp_ros2_interfaces/btcpp_ros2_interfaces__py"
+    "cmake.sourceDirectory": "${workspaceFolder}/build/btcpp_ros2_interfaces/btcpp_ros2_interfaces__py",
+    "git.scanRepositories": [
+        "src"
+    ],
+    "git.autoRepositoryDetection": true
 }

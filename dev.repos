@@ -69,6 +69,10 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zephyr_common/imeta_y1_ros2.git
         version: main
+    src/zephyr_common/OrbbecSDK_ROS2:
+        type: git
+        url: https://github.com/orbbec/OrbbecSDK_ROS2.git
+        version: v2-main
 
     #zephyr_teleop
     src/zephyr_teleop/teleop_rtc:
