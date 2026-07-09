@@ -108,7 +108,7 @@
     "github.copilot.chat.codeGeneration.useInstructionFiles": true,
     "cmake.sourceDirectory": "${workspaceFolder}/build/btcpp_ros2_interfaces/btcpp_ros2_interfaces__py",
     "git.scanRepositories": [
-        "src"
+        "/workspaces/zephyr-dev/zephyr_ws/src"
     ],
     "git.autoRepositoryDetection": true
 }
