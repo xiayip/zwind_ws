@@ -110,5 +110,7 @@
     "git.scanRepositories": [
         "/workspaces/zephyr-dev/zephyr_ws/src"
     ],
-    "git.autoRepositoryDetection": true
+    "git.autoRepositoryDetection": "subFolders",
+    "git.repositoryScanMaxDepth": 4,
+    "git.detectSubmodules": true
 }

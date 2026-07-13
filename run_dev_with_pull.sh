@@ -5,6 +5,24 @@ set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
 export ZEPHYR_WS="$(pwd)/.."
 
+ROBOT_ENV_FILE="/etc/zephyr/robot.env"
+if [[ ! -f "$ROBOT_ENV_FILE" ]]; then
+  echo "ERROR: Required robot environment file is missing: $ROBOT_ENV_FILE" >&2
+  echo "Create it with the deployment credentials before starting the container." >&2
+  exit 1
+fi
+
+if [[ ! -r "$ROBOT_ENV_FILE" ]]; then
+  echo "ERROR: Robot environment file is not readable: $ROBOT_ENV_FILE" >&2
+  exit 1
+fi
+
+if [[ $(stat -c '%a' "$ROBOT_ENV_FILE") -gt 600 ]]; then
+  echo "ERROR: Robot environment file permissions are too broad: $ROBOT_ENV_FILE" >&2
+  echo "Expected owner-only access (for example: sudo chmod 600 $ROBOT_ENV_FILE)." >&2
+  exit 1
+fi
+
 # Login to the Docker registry
 REGISTRY="registry.jihulab.com"
 REGISTRY_USER="${REGISTRY_USER:-gitlab+deploy-token-14567}"

@@ -1,1 +1,2 @@
 -v /home/nvidia/.ssh:/home/admin/.ssh:ro
+--env-file /etc/zephyr/robot.env
