@@ -79,9 +79,9 @@ repositories:
         version: main
 
     #zephyr_teleop
-    src/zephyr_teleop/teleop_rtc:
+    src/zephyr_teleop/teleop_rtc_cpp:
         type: git
-        url: git@jihulab.com:robot_group/zephyr_teleop/teleop_rtc.git
+        url: git@jihulab.com:robot_group/zephyr_teleop/teleop_rtc_cpp.git
         version: main
 
     #zephyr_mission
