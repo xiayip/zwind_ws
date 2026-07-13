@@ -27,14 +27,14 @@ repositories:
 
     # zephyr_perception
     # FAST-LIVO2
-    src/zephyr_perception/FAST-LIVO2/FAST-LIVO2:
-        type: git
-        url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/fast-livo2.git
-        version: ros2
-    src/zephyr_perception/FAST-LIVO2/rpg_vikit:
-        type: git
-        url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/rpg_vikit.git
-        version: ros2
+    # src/zephyr_perception/FAST-LIVO2/FAST-LIVO2:
+    #     type: git
+    #     url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/fast-livo2.git
+    #     version: ros2
+    # src/zephyr_perception/FAST-LIVO2/rpg_vikit:
+    #     type: git
+    #     url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/rpg_vikit.git
+    #     version: ros2
 
     # zephyr_common
     src/zephyr_common/topic_based_ros2_control:
@@ -83,6 +83,10 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zephyr_teleop/teleop_rtc_cpp.git
         version: main
+    src/zephyr_teleop/teleop_input_control:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_teleop/teleop_input_control.git
+        version: main
 
     #zephyr_mission
     src/zephyr_mission/BehaviorTree-ROS2:
@@ -92,6 +96,16 @@ repositories:
     src/zephyr_mission/zephyr_bt:
         type: git
         url: git@jihulab.com:robot_group/zephyr_mission/zephyr_bt.git
+        version: main
+    src/zephyr_mission/robot_mode_control:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_mission/robot_mode_control.git
+        version: main
+
+    #zephyr_fleet
+    src/zephyr_fleet/fleet_status:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/fleet_status.git
         version: main
 
     # zephyr_z1
