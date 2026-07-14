@@ -57,6 +57,31 @@ RUN wget -O /tmp/foxglove-agent.deb https://get.foxglove.dev/agent/v1.4.9/foxglo
  && apt-get install -y --no-install-recommends /tmp/foxglove-agent.deb \
  && rm /tmp/foxglove-agent.deb
 
+# Agent runtime layout. The recorder writes in-progress bags to staging/ and
+# atomically moves finished .mcap files into recordings/ (STORAGE_ROOT), so the
+# Agent never sees partial files. VARDIR holds the Agent's internal state DB.
+# The deb's postinst normally creates the `foxglove` user; create it here if
+# the postinst skipped it (no systemd in the build container), and grant group
+# access since the recorder process (not foxglove) creates the files.
+RUN id foxglove >/dev/null 2>&1 || useradd --system --user-group --no-create-home foxglove; \
+    mkdir -p /data/foxglove/recordings /data/foxglove/staging /var/lib/foxglove/agent \
+ && chown -R foxglove:foxglove /data/foxglove /var/lib/foxglove/agent \
+ && chmod -R 2775 /data/foxglove /var/lib/foxglove/agent
+
+# Container-friendly Agent defaults (the deb's systemd unit and
+# /etc/foxglove/agent/envfile do not apply here — the container has no
+# systemd, so the Agent is launched by the entrypoint/supervisor and reads
+# these from the environment).
+#
+# FOXGLOVE_DEVICE_TOKEN is intentionally NOT baked into the image: it is a
+# per-robot secret and must be injected at runtime (docker env / env_file).
+ENV STORAGE_ROOT=/data/foxglove/recordings \
+    VARDIR=/var/lib/foxglove/agent \
+    WATCH_INCLUDE_SUFFIXES=.mcap \
+    WATCH_AUTO_IMPORT_PATTERN=**/*.mcap \
+    PRIMARY_SITE_MODE=hosted \
+    FOXGLOVE_LOG_OUTPUT=text
+
 # ==================================================================================================
 # 2. ROS 2 Jazzy Packages
 # ==================================================================================================
