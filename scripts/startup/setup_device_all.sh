@@ -29,6 +29,7 @@ write_file_if_needed() {
   local tmp
   tmp="$(mktemp)"
   printf '%s\n' "$content" >"$tmp"
+  log "Writing $target"
   install -D -m 0644 "$tmp" "$target"
   log "Installed $target"
   rm -f "$tmp"
@@ -42,6 +43,7 @@ copy_file_if_needed() {
     log "Skipping existing $destination"
     return
   fi
+  log "Copying $source -> $destination"
   install -D -m "$mode" "$source" "$destination"
   log "Installed $destination"
 }
