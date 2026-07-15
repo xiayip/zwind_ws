@@ -101,8 +101,6 @@ systemctl enable "$DEVICE_SETUP_SERVICE_NAME"
 udevadm control --reload-rules
 udevadm trigger --type=devices --action=add
 
-nvidia-ctk cdi generate --mode=csv --output=/etc/cdi/nvidia.yaml
-
 log "You may need to install gs_usb kernel module if not already installed. "
 log "Run: $SCRIPT_DIR/install_gs_usb.sh"
 
