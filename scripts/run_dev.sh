@@ -111,6 +111,19 @@ if [[ -n "$SSH_AUTH_SOCK" ]]; then
     DOCKER_ARGS+=("-e SSH_AUTH_SOCK=/ssh-agent")
 fi
 
+# SSH keys (read-only)
+if [[ -d "$HOME/.ssh" ]]; then
+    DOCKER_ARGS+=("-v $HOME/.ssh:/home/admin/.ssh:ro")
+fi
+
+# Robot environment file
+ROBOT_ENV_FILE="/etc/zephyr/robot.env"
+if [[ -f "$ROBOT_ENV_FILE" ]]; then
+    DOCKER_ARGS+=("--env-file $ROBOT_ENV_FILE")
+else
+    print_warning "Robot environment file not found: $ROBOT_ENV_FILE (skipping --env-file)"
+fi
+
 # Platform-specific mounts (Jetson / aarch64)
 if [[ "$PLATFORM" == "aarch64" ]]; then
     DOCKER_ARGS+=("-e NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all")

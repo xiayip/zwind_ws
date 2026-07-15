@@ -59,27 +59,52 @@ vcs import < dev.repos --skip-existing --repos --debug
 ok "Repositories are up to date"
 
 # ---------------------------------------------------------------------------
-# Step 3: Configure extra docker run arguments
-# ---------------------------------------------------------------------------
-step "Configuring docker run arguments (docker/.dockerargs)"
-
-DOCKERARGS_FILE="./docker/.dockerargs"
-DOCKERARGS_CONTENT="-v $HOME/.ssh:/home/admin/.ssh:ro"
-
-if [[ -f "$DOCKERARGS_FILE" ]] && [[ "$(cat "$DOCKERARGS_FILE")" == "$DOCKERARGS_CONTENT" ]]; then
-    skip "$DOCKERARGS_FILE already configured"
-else
-    printf '%s\n' "$DOCKERARGS_CONTENT" > "$DOCKERARGS_FILE"
-    ok "Wrote $DOCKERARGS_FILE"
-fi
-
-# ---------------------------------------------------------------------------
-# Step 4: Set up device configuration (udev rules, systemd services, etc.)
+# Step 3: Set up device configuration (udev rules, systemd services, etc.)
 # ---------------------------------------------------------------------------
 step "Setting up device configuration (udev rules, systemd services)"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 sudo "$SCRIPT_DIR/scripts/startup/setup_device_all.sh"
 ok "Device configuration complete"
+
+# ---------------------------------------------------------------------------
+# Step 4: Set up Tailscale
+# ---------------------------------------------------------------------------
+step "Setting up Tailscale"
+
+ROBOT_ENV_FILE="/etc/zephyr/robot.env"
+if ! sudo test -f "$ROBOT_ENV_FILE"; then
+    echo -e "${C_RED}    ✘ Missing $ROBOT_ENV_FILE (required for TAILSCALE_AUTH_KEY / TAILSCALE_HOSTNAME)${C_RESET}" >&2
+    exit 1
+fi
+
+# Load robot env (root-owned, mode 600) into this shell
+set -a
+source <(sudo cat "$ROBOT_ENV_FILE")
+set +a
+
+if [[ -z "${TAILSCALE_AUTH_KEY:-}" ]]; then
+    echo -e "${C_RED}    ✘ TAILSCALE_AUTH_KEY is not set in $ROBOT_ENV_FILE${C_RESET}" >&2
+    exit 1
+fi
+TAILSCALE_HOSTNAME="${TAILSCALE_HOSTNAME:-${ROBOT_ID:-$(hostname)}}"
+
+if command -v tailscale &> /dev/null; then
+    skip "tailscale already installed ($(tailscale version | head -n1))"
+else
+    echo "    Installing tailscale..."
+    curl -fsSL https://tailscale.com/install.sh | sh
+    ok "Installed tailscale"
+fi
+
+sudo systemctl enable --now tailscaled
+
+if [[ "$(tailscale status --json 2>/dev/null | grep -o '"BackendState": *"[^"]*"' | head -n1)" == *'"Running"'* ]]; then
+    skip "tailscale already connected as '$(tailscale status --json | grep -o '"HostName": *"[^"]*"' | head -n1 | cut -d'"' -f4)'"
+else
+    echo "    Connecting to tailscale as '$TAILSCALE_HOSTNAME'..."
+    sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="$TAILSCALE_HOSTNAME"
+    ok "Tailscale connected as '$TAILSCALE_HOSTNAME'"
+fi
 
 echo -e "\n${C_GREEN}All ${STEP_TOTAL} steps completed successfully.${C_RESET}"
