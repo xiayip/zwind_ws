@@ -57,6 +57,13 @@ RUN wget -O /tmp/foxglove-agent.deb https://get.foxglove.dev/agent/v1.4.9/foxglo
  && apt-get install -y --no-install-recommends /tmp/foxglove-agent.deb \
  && rm /tmp/foxglove-agent.deb
 
+# The development container does not run systemd, so start the Agent from the
+# workspace entrypoint's extension hook instead of the service installed by the
+# deb package.
+COPY scripts/entrypoint_additions/foxglove-agent.sh \
+    /usr/local/bin/scripts/entrypoint_additions/foxglove-agent.sh
+RUN chmod +x /usr/local/bin/scripts/entrypoint_additions/foxglove-agent.sh
+
 # Agent runtime layout. The recorder writes in-progress bags to staging/ and
 # atomically moves finished .mcap files into recordings/ (STORAGE_ROOT), so the
 # Agent never sees partial files. VARDIR holds the Agent's internal state DB.

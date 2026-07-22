@@ -41,6 +41,10 @@ done
 # persistent host location is preferred.
 CODEX_STATE_DIR="${CODEX_STATE_DIR:-${ZEPHYR_DEV_DIR}/.codex-container}"
 
+# Recordings and Agent index state must outlive this disposable (--rm)
+# development container. Override this for robots with a dedicated data disk.
+FOXGLOVE_HOST_DATA_DIR="${FOXGLOVE_HOST_DATA_DIR:-${HOME}/.local/share/zephyr/foxglove}"
+
 # --------------- Validations ---------------------------------------------------------------------
 if [[ ! -d "$ZEPHYR_DEV_DIR" ]]; then
     print_error "Workspace directory does not exist: $ZEPHYR_DEV_DIR"
@@ -52,8 +56,19 @@ if [[ -e "$CODEX_STATE_DIR" && ! -d "$CODEX_STATE_DIR" ]]; then
     exit 1
 fi
 
+if [[ -e "$FOXGLOVE_HOST_DATA_DIR" && ! -d "$FOXGLOVE_HOST_DATA_DIR" ]]; then
+    print_error "Foxglove data path exists but is not a directory: $FOXGLOVE_HOST_DATA_DIR"
+    exit 1
+fi
+
 mkdir -p "$CODEX_STATE_DIR"
 chmod 700 "$CODEX_STATE_DIR"
+
+mkdir -p \
+    "$FOXGLOVE_HOST_DATA_DIR/recordings" \
+    "$FOXGLOVE_HOST_DATA_DIR/staging" \
+    "$FOXGLOVE_HOST_DATA_DIR/agent"
+chmod 700 "$FOXGLOVE_HOST_DATA_DIR/agent"
 
 if [[ $(id -u) -eq 0 ]]; then
     print_error "Do not run this script as root. Add yourself to the docker group instead."
@@ -121,6 +136,12 @@ DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
 
 # Codex stores IDE/CLI history, configuration, and other local state here.
 DOCKER_ARGS+=("-v $CODEX_STATE_DIR:/home/admin/.codex")
+
+# Foxglove watches only completed MCAP files under recordings. Record into
+# staging first, then atomically move completed files into recordings.
+DOCKER_ARGS+=("-v $FOXGLOVE_HOST_DATA_DIR/recordings:/data/foxglove/recordings")
+DOCKER_ARGS+=("-v $FOXGLOVE_HOST_DATA_DIR/staging:/data/foxglove/staging")
+DOCKER_ARGS+=("-v $FOXGLOVE_HOST_DATA_DIR/agent:/var/lib/foxglove/agent")
 
 # SSH agent forwarding
 if [[ -n "$SSH_AUTH_SOCK" ]]; then
