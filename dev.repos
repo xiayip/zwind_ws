@@ -12,10 +12,6 @@ repositories:
         type: git
         url: https://github.com/PickNikRobotics/bio_ik.git
         version: ros2
-    src/zephyr_manipulation/online_signal_smoothing:
-        type: git
-        url: git@jihulab.com:robot_group/zephyr_manipulation/online_signal_smoothing.git
-        version: main
     src/zephyr_manipulation/lerobot_zephyr:
         type: git
         url: git@jihulab.com:robot_group/zephyr_manipulation/lerobot_zephyr.git
