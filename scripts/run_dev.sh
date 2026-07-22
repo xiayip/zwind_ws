@@ -35,11 +35,25 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Keep Codex IDE/CLI state outside the disposable container. The container is
+# launched with --rm, so anything stored only under /home/admin would otherwise
+# be deleted when the container exits. Override CODEX_STATE_DIR when a different
+# persistent host location is preferred.
+CODEX_STATE_DIR="${CODEX_STATE_DIR:-${ZEPHYR_DEV_DIR}/.codex-container}"
+
 # --------------- Validations ---------------------------------------------------------------------
 if [[ ! -d "$ZEPHYR_DEV_DIR" ]]; then
     print_error "Workspace directory does not exist: $ZEPHYR_DEV_DIR"
     exit 1
 fi
+
+if [[ -e "$CODEX_STATE_DIR" && ! -d "$CODEX_STATE_DIR" ]]; then
+    print_error "Codex state path exists but is not a directory: $CODEX_STATE_DIR"
+    exit 1
+fi
+
+mkdir -p "$CODEX_STATE_DIR"
+chmod 700 "$CODEX_STATE_DIR"
 
 if [[ $(id -u) -eq 0 ]]; then
     print_error "Do not run this script as root. Add yourself to the docker group instead."
@@ -104,6 +118,9 @@ DOCKER_ARGS+=("-e USER")
 DOCKER_ARGS+=("-e ZEPHYR_WS=${ZEPHYR_CONTAINER_WS_DIR}")
 DOCKER_ARGS+=("-e HOST_USER_UID=$(id -u)")
 DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
+
+# Codex stores IDE/CLI history, configuration, and other local state here.
+DOCKER_ARGS+=("-v $CODEX_STATE_DIR:/home/admin/.codex")
 
 # SSH agent forwarding
 if [[ -n "$SSH_AUTH_SOCK" ]]; then

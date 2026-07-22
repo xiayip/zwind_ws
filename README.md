@@ -10,6 +10,10 @@
 ./run_dev_with_pull.sh
 ```
 
+Codex IDE/CLI history is persisted on the host in `.codex-container` next to
+this workspace. Set `CODEX_STATE_DIR` before launching to use another host
+directory.
+
 ## (Optional) Run develop docker with build image from Dockerfile
 
 ```
