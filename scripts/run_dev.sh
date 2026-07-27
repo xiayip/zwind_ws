@@ -41,9 +41,10 @@ done
 # persistent host location is preferred.
 CODEX_STATE_DIR="${CODEX_STATE_DIR:-${ZEPHYR_DEV_DIR}/.codex-container}"
 
-# Recordings and Agent index state must outlive this disposable (--rm)
-# development container. Override this for robots with a dedicated data disk.
-FOXGLOVE_HOST_DATA_DIR="${FOXGLOVE_HOST_DATA_DIR:-${HOME}/.local/share/zephyr/foxglove}"
+# Zephyr recording sessions must outlive this disposable (--rm) development
+# container. The standalone zephyr-data-agent mounts the same host directory.
+ZEPHYR_RECORDINGS_DIR="${ZEPHYR_RECORDINGS_DIR:-${HOME}/zephyr-recordings}"
+ZEPHYR_DATA_GID="${ZEPHYR_DATA_GID:-12001}"
 
 # --------------- Validations ---------------------------------------------------------------------
 if [[ ! -d "$ZEPHYR_DEV_DIR" ]]; then
@@ -56,19 +57,20 @@ if [[ -e "$CODEX_STATE_DIR" && ! -d "$CODEX_STATE_DIR" ]]; then
     exit 1
 fi
 
-if [[ -e "$FOXGLOVE_HOST_DATA_DIR" && ! -d "$FOXGLOVE_HOST_DATA_DIR" ]]; then
-    print_error "Foxglove data path exists but is not a directory: $FOXGLOVE_HOST_DATA_DIR"
+if [[ -e "$ZEPHYR_RECORDINGS_DIR" && ! -d "$ZEPHYR_RECORDINGS_DIR" ]]; then
+    print_error "Zephyr recordings path exists but is not a directory: $ZEPHYR_RECORDINGS_DIR"
+    exit 1
+fi
+
+if [[ ! "$ZEPHYR_DATA_GID" =~ ^[1-9][0-9]*$ ]]; then
+    print_error "ZEPHYR_DATA_GID must be a positive numeric group ID"
     exit 1
 fi
 
 mkdir -p "$CODEX_STATE_DIR"
 chmod 700 "$CODEX_STATE_DIR"
 
-mkdir -p \
-    "$FOXGLOVE_HOST_DATA_DIR/recordings" \
-    "$FOXGLOVE_HOST_DATA_DIR/staging" \
-    "$FOXGLOVE_HOST_DATA_DIR/agent"
-chmod 700 "$FOXGLOVE_HOST_DATA_DIR/agent"
+mkdir -p "$ZEPHYR_RECORDINGS_DIR"
 
 if [[ $(id -u) -eq 0 ]]; then
     print_error "Do not run this script as root. Add yourself to the docker group instead."
@@ -137,11 +139,10 @@ DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
 # Codex stores IDE/CLI history, configuration, and other local state here.
 DOCKER_ARGS+=("-v $CODEX_STATE_DIR:/home/admin/.codex")
 
-# Foxglove watches only completed MCAP files under recordings. Record into
-# staging first, then atomically move completed files into recordings.
-DOCKER_ARGS+=("-v $FOXGLOVE_HOST_DATA_DIR/recordings:/data/foxglove/recordings")
-DOCKER_ARGS+=("-v $FOXGLOVE_HOST_DATA_DIR/staging:/data/foxglove/staging")
-DOCKER_ARGS+=("-v $FOXGLOVE_HOST_DATA_DIR/agent:/var/lib/foxglove/agent")
+# The ROS recorder writes partial sessions under recorder/handoff and seals
+# them by atomically renaming the completed directory into agent/ready.
+DOCKER_ARGS+=("--group-add $ZEPHYR_DATA_GID")
+DOCKER_ARGS+=("-v $ZEPHYR_RECORDINGS_DIR:/data/zephyr-recordings")
 
 # SSH agent forwarding
 if [[ -n "$SSH_AUTH_SOCK" ]]; then

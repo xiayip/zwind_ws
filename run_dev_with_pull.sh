@@ -30,6 +30,55 @@ REGISTRY_PASSWORD="${REGISTRY_PASSWORD:-gldt-2MGMFUpyCsmerext2sK6}"
 
 source "./scripts/ensure_docker.sh"
 
+ZEPHYR_DATA_AGENT_DEPLOY_DIR="${ZEPHYR_DATA_AGENT_DEPLOY_DIR:-${HOME}/zephyr-data-platform-agent-dev/deploy}"
+ZEPHYR_DATA_AGENT_REQUIRED="${ZEPHYR_DATA_AGENT_REQUIRED:-0}"
+
+start_zephyr_data_agent() {
+  local compose_file="${ZEPHYR_DATA_AGENT_DEPLOY_DIR}/docker-compose.yml"
+  local env_file="${ZEPHYR_DATA_AGENT_DEPLOY_DIR}/.env"
+  local -a compose_cmd=(
+    docker compose
+    --project-directory "$ZEPHYR_DATA_AGENT_DEPLOY_DIR"
+    --env-file "$env_file"
+    -f "$compose_file"
+  )
+
+  if [[ "$ZEPHYR_DATA_AGENT_REQUIRED" != "0" && "$ZEPHYR_DATA_AGENT_REQUIRED" != "1" ]]; then
+    echo "ERROR: ZEPHYR_DATA_AGENT_REQUIRED must be 0 or 1." >&2
+    return 1
+  fi
+
+  if [[ ! -f "$compose_file" || ! -f "$env_file" ]]; then
+    echo "WARNING: Zephyr Data Agent deployment is incomplete: $ZEPHYR_DATA_AGENT_DEPLOY_DIR" >&2
+    if [[ "$ZEPHYR_DATA_AGENT_REQUIRED" == "1" ]]; then
+      return 1
+    fi
+    return 0
+  fi
+
+  if ! "${compose_cmd[@]}" config --quiet; then
+    echo "WARNING: Zephyr Data Agent Compose configuration is invalid." >&2
+    if [[ "$ZEPHYR_DATA_AGENT_REQUIRED" == "1" ]]; then
+      return 1
+    fi
+    return 0
+  fi
+
+  echo "➡️ Ensuring Zephyr Data Agent is running"
+  if ! "${compose_cmd[@]}" up -d --no-build; then
+    echo "WARNING: Zephyr Data Agent failed to start; continuing with the robot container." >&2
+    if [[ "$ZEPHYR_DATA_AGENT_REQUIRED" == "1" ]]; then
+      return 1
+    fi
+    return 0
+  fi
+
+  "${compose_cmd[@]}" ps zephyr-data-agent || true
+  return 0
+}
+
+start_zephyr_data_agent
+
 printf '%s\n' "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGISTRY_USER" --password-stdin
 
 # Pull image from registry
