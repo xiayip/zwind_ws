@@ -165,7 +165,9 @@ fi
 
 # Platform-specific mounts (Jetson / aarch64)
 if [[ "$PLATFORM" == "aarch64" ]]; then
-    DOCKER_ARGS+=("-e NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all")
+    # Keep NVIDIA_VISIBLE_DEVICES=all from the common GPU arguments above.
+    # A CDI-qualified value makes startup depend on a generated CDI spec,
+    # which can retain stale DRM device paths after a Jetson driver reprobe.
     DOCKER_ARGS+=("-v /usr/bin/tegrastats:/usr/bin/tegrastats")
     DOCKER_ARGS+=("-v /tmp/:/tmp/")
     DOCKER_ARGS+=("-v /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra")
