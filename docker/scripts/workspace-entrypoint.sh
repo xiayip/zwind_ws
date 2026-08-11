@@ -35,6 +35,18 @@ adduser ${USERNAME} video >/dev/null
 adduser ${USERNAME} plugdev >/dev/null
 adduser ${USERNAME} sudo  >/dev/null
 
+# Register the shared recordings group inside the container before gosu
+# initializes the user's supplementary groups. Docker's --group-add alone is
+# lost when gosu switches from root to the workspace user.
+if [[ -n "${ZEPHYR_DATA_GID:-}" ]]; then
+  ZEPHYR_DATA_GROUP="$(getent group "${ZEPHYR_DATA_GID}" | cut -d: -f1)"
+  if [[ -z "${ZEPHYR_DATA_GROUP}" ]]; then
+    ZEPHYR_DATA_GROUP="zephyr-data"
+    groupadd --gid "${ZEPHYR_DATA_GID}" "${ZEPHYR_DATA_GROUP}"
+  fi
+  adduser "${USERNAME}" "${ZEPHYR_DATA_GROUP}" >/dev/null
+fi
+
 # If jtop present, give the user access
 if [ -S /run/jtop.sock ]; then
   JETSON_STATS_GID="$(stat -c %g /run/jtop.sock)"

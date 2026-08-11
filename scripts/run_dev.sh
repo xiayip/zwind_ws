@@ -135,6 +135,7 @@ DOCKER_ARGS+=("-e USER")
 DOCKER_ARGS+=("-e ZEPHYR_WS=${ZEPHYR_CONTAINER_WS_DIR}")
 DOCKER_ARGS+=("-e HOST_USER_UID=$(id -u)")
 DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
+DOCKER_ARGS+=("-e ZEPHYR_DATA_GID=$ZEPHYR_DATA_GID")
 
 # Codex stores IDE/CLI history, configuration, and other local state here.
 DOCKER_ARGS+=("-v $CODEX_STATE_DIR:/home/admin/.codex")
@@ -143,6 +144,12 @@ DOCKER_ARGS+=("-v $CODEX_STATE_DIR:/home/admin/.codex")
 # them by atomically renaming the completed directory into agent/ready.
 DOCKER_ARGS+=("--group-add $ZEPHYR_DATA_GID")
 DOCKER_ARGS+=("-v $ZEPHYR_RECORDINGS_DIR:/data/zephyr-recordings")
+
+# Use the workspace entrypoint even when -b launches a pre-built registry
+# image. This keeps host-side user/group setup in sync with this launcher.
+DOCKER_ARGS+=(
+    "-v ${WS_DIR}/docker/scripts/workspace-entrypoint.sh:/usr/local/bin/scripts/workspace-entrypoint.sh:ro"
+)
 
 # SSH agent forwarding
 if [[ -n "$SSH_AUTH_SOCK" ]]; then
