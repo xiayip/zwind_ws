@@ -14,6 +14,8 @@ SYSTEMD_SCRIPT_DIR="/etc/systemd"
 DEVICE_SETUP_SERVICE_NAME="${ZEPHYR_DEVICE_SETUP_SERVICE_NAME:-zephyr_device_setup}"
 DEVICE_SETUP_SCRIPT="${DEVICE_SETUP_SERVICE_NAME}.sh"
 DEVICE_SETUP_SERVICE="${DEVICE_SETUP_SERVICE_NAME}.service"
+TAILSCALE_JOIN_SCRIPT="zephyr_tailscale_join.sh"
+TAILSCALE_JOIN_SERVICE="zephyr_tailscale_join.service"
 
 log() {
   echo "[setup] $*"
@@ -57,6 +59,31 @@ ensure_binary udevadm
 ensure_binary systemctl
 ensure_binary install
 
+install_tailscale() {
+  if command -v tailscale >/dev/null 2>&1; then
+    log "Tailscale is already installed"
+    return
+  fi
+
+  # Use Tailscale's official apt repository so the package is available on
+  # minimal Ubuntu robot images as well as on development machines.
+  . /etc/os-release
+  if [[ "${ID:-}" != "ubuntu" || -z "${VERSION_CODENAME:-}" ]]; then
+    echo "Automatic Tailscale installation supports Ubuntu only; install it manually first." >&2
+    exit 1
+  fi
+
+  log "Installing Tailscale from the official apt repository for ${VERSION_CODENAME}"
+  apt-get update
+  apt-get install -y --no-install-recommends ca-certificates curl
+  curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${VERSION_CODENAME}.noarmor.gpg" \
+    -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+  curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${VERSION_CODENAME}.tailscale-keyring.list" \
+    -o /etc/apt/sources.list.d/tailscale.list
+  apt-get update
+  apt-get install -y --no-install-recommends tailscale
+}
+
 log "Configuring systemd network link files"
 mkdir -p "$NETWORK_DIR"
 
@@ -92,9 +119,16 @@ copy_file_if_needed "$SCRIPT_DIR/$DEVICE_SETUP_SCRIPT" 0755 "$SYSTEMD_SCRIPT_DIR
 mkdir -p "$SYSTEMD_DIR"
 copy_file_if_needed "$SCRIPT_DIR/$DEVICE_SETUP_SERVICE" 0644 "$SYSTEMD_DIR/$DEVICE_SETUP_SERVICE"
 
+log "Installing and enabling host Tailscale"
+install_tailscale
+copy_file_if_needed "$SCRIPT_DIR/$TAILSCALE_JOIN_SCRIPT" 0755 "$SYSTEMD_SCRIPT_DIR/$TAILSCALE_JOIN_SCRIPT"
+copy_file_if_needed "$SCRIPT_DIR/$TAILSCALE_JOIN_SERVICE" 0644 "$SYSTEMD_DIR/$TAILSCALE_JOIN_SERVICE"
+
 log "Reloading systemd and udev"
 systemctl daemon-reload
 systemctl enable "$DEVICE_SETUP_SERVICE_NAME"
+systemctl enable --now tailscaled
+systemctl enable --now zephyr_tailscale_join.service
 
 udevadm control --reload-rules
 udevadm trigger --type=devices --action=add
