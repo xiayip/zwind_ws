@@ -72,6 +72,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ros-jazzy-moveit-task-constructor-msgs \
         ros-jazzy-moveit-task-constructor-visualization \
         ros-jazzy-osqp-vendor \
+        ros-jazzy-pinocchio \
         ros-jazzy-ruckig \
         # Perception
         # ros-jazzy-orbbec-camera \ # have problems with magic enum version conflict, so disable for now
