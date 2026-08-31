@@ -133,6 +133,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ros-jazzy-interactive-markers \
         ros-jazzy-joint-state-broadcaster \
         ros-jazzy-joint-state-publisher \
+        ros-jazzy-joint-state-publisher-gui \
         ros-jazzy-joint-trajectory-controller \
         ros-jazzy-joy \
         ros-jazzy-kdl-parser \
