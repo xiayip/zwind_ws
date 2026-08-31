@@ -148,6 +148,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ros-jazzy-moveit-ros-planning-interface \
         ros-jazzy-moveit-servo \
         ros-jazzy-moveit-visual-tools \
+        ros-jazzy-pick-ik \
         ros-jazzy-pluginlib \
         ros-jazzy-py-binding-tools \
         ros-jazzy-robot-state-publisher \
