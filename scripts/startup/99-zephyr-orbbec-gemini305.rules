@@ -1,0 +1,4 @@
+# Zephyr-managed permissions for Orbbec Gemini 305 USB devices.
+# Product IDs match the upstream OrbbecSDK_ROS2 udev rules.
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0840", MODE:="0666", OWNER:="root", GROUP:="video", SYMLINK+="Gemini_305"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2bc5", ATTRS{idProduct}=="0841", MODE:="0666", OWNER:="root", GROUP:="video", SYMLINK+="Gemini_305"

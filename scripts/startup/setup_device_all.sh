@@ -48,6 +48,15 @@ copy_file_if_needed() {
   log "Installed $destination"
 }
 
+install_managed_file() {
+  local source="$1"
+  local mode="$2"
+  local destination="$3"
+  log "Installing managed file $source -> $destination"
+  install -D -m "$mode" "$source" "$destination"
+  log "Installed $destination"
+}
+
 ensure_binary() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Required command '$1' not found in PATH" >&2
@@ -86,6 +95,8 @@ log "Installing udev rules"
 mkdir -p "$UDEV_DIR"
 copy_file_if_needed "$SCRIPT_DIR/80-can-names.rules" 0644 "$UDEV_DIR/80-can-names.rules"
 copy_file_if_needed "$SCRIPT_DIR/99-obsensor-libusb.rules" 0644 "$UDEV_DIR/99-obsensor-libusb.rules"
+install_managed_file "$SCRIPT_DIR/99-zephyr-orbbec-gemini305.rules" 0644 \
+  "$UDEV_DIR/99-zephyr-orbbec-gemini305.rules"
 copy_file_if_needed "$SCRIPT_DIR/99-odin-usb.rules" 0644 "$UDEV_DIR/99-odin-usb.rules"
 
 log "Installing device setup service files: $DEVICE_SETUP_SERVICE_NAME"
