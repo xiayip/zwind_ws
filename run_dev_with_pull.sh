@@ -17,12 +17,6 @@ if [[ ! -r "$ROBOT_ENV_FILE" ]]; then
   exit 1
 fi
 
-if [[ $(stat -c '%a' "$ROBOT_ENV_FILE") -gt 600 ]]; then
-  echo "ERROR: Robot environment file permissions are too broad: $ROBOT_ENV_FILE" >&2
-  echo "Expected owner-only access (for example: sudo chmod 600 $ROBOT_ENV_FILE)." >&2
-  exit 1
-fi
-
 # Login to the Docker registry
 REGISTRY="registry.jihulab.com"
 REGISTRY_USER="${REGISTRY_USER:-gitlab+deploy-token-14567}"

@@ -153,12 +153,37 @@ function enable_sudo_docker_fallback {
     export -f docker
 }
 
+# Return success only when Docker reports an exact runtime name.
+function docker_runtime_is_registered {
+    local runtime_name="$1"
+    local runtime_names=""
+
+    if runtime_names="$(docker info --format '{{range $name, $_ := .Runtimes}}{{println $name}}{{end}}' 2>/dev/null)"; then
+        grep -Fxq -- "$runtime_name" <<< "$runtime_names"
+        return
+    fi
+
+    # Older Docker versions may not support formatting .Runtimes.
+    docker info 2>/dev/null | awk -v runtime_name="$runtime_name" '
+        $1 == "Runtimes:" {
+            for (i = 2; i <= NF; i++) {
+                if ($i == runtime_name) {
+                    found = 1
+                    break
+                }
+            }
+            exit
+        }
+        END { exit(found ? 0 : 1) }
+    '
+}
+
 # Ensure the NVIDIA container runtime is installed and registered as Docker's default runtime.
 # Required so containers can be launched with `--runtime nvidia` (GPU access on Jetson).
 # See: https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
 function ensure_nvidia_runtime {
     # Already registered? Nothing to do.
-    if docker info 2>/dev/null | grep -qiw nvidia; then
+    if docker_runtime_is_registered nvidia; then
         return 0
     fi
 
@@ -196,7 +221,7 @@ function ensure_nvidia_runtime {
         sudo service docker restart
     fi
 
-    if ! docker info 2>/dev/null | grep -qiw nvidia; then
+    if ! docker_runtime_is_registered nvidia; then
         print_error "Configured the NVIDIA runtime but Docker still does not report it. Check /etc/docker/daemon.json and the Docker service."
         exit 1
     fi
