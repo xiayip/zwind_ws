@@ -83,6 +83,10 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zephyr_teleop/teleop_input_control.git
         version: main
+    src/zephyr_teleop/teleop_pose_adapter:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_teleop/teleop_pose_adapter.git
+        version: main
 
     #zephyr_mission
     src/zephyr_mission/BehaviorTree-ROS2:
