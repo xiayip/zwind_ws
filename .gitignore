@@ -5,3 +5,5 @@ build/
 data/
 .dockerargs
 .claude/
+outputs/
+.model_cache/
