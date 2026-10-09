@@ -7,3 +7,5 @@ data/
 .claude/
 outputs/
 .model_cache/
+__pycache__/
+*.py[cod]

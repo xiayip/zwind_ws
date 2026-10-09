@@ -29,6 +29,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         can-utils \
         iproute2 \
         net-tools \
+        # GMSL sensor-mode initialization and V4L2 diagnostics
+        v4l-utils \
         # Boost / PCL / math
         libboost-dev \
         libgeographiclib-dev \
