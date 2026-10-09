@@ -78,6 +78,10 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zephyr_common/zephyr_arm_ros2.git
         version: main
+    src/zephyr_common/zephyr_gmsl_camera:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/zephyr_gmsl_camera.git
+        version: main
 
     #zephyr_teleop
     src/zephyr_teleop/teleop_rtc_cpp:
