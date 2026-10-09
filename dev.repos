@@ -17,17 +17,6 @@ repositories:
         url: git@jihulab.com:robot_group/zephyr_manipulation/lerobot_ros2.git
         version: main
 
-    # zephyr_perception
-    # FAST-LIVO2
-    # src/zephyr_perception/FAST-LIVO2/FAST-LIVO2:
-    #     type: git
-    #     url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/fast-livo2.git
-    #     version: ros2
-    # src/zephyr_perception/FAST-LIVO2/rpg_vikit:
-    #     type: git
-    #     url: git@jihulab.com:robot_group/zephyr_perception/fast-livo2/rpg_vikit.git
-    #     version: ros2
-
     # zephyr_common
     src/zephyr_common/topic_based_ros2_control:
         type: git
@@ -40,6 +29,10 @@ repositories:
     src/zephyr_common/can_hardware_interface:
         type: git
         url: git@jihulab.com:robot_group/zephyr_common/can_hardware_interface.git
+        version: main
+    src/zephyr_common/shared_can_hardware:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/shared_can_hardware.git
         version: main
     src/zephyr_common/zephyr_controllers:
         type: git
@@ -68,6 +61,22 @@ repositories:
     src/zephyr_common/rmp220_ros2_driver:
         type: git
         url: git@jihulab.com:robot_group/zephyr_common/rmp220_ros2_driver.git
+        version: main
+    src/zephyr_common/ranger_mini_v3_ros2:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/ranger_mini_v3_ros2.git
+        version: main
+    src/zephyr_common/rebot_arm_rs_ros2:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/rebot_arm_rs_ros2.git
+        version: main
+    src/zephyr_common/omni_picker_ros2:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/omni_picker_ros2.git
+        version: main
+    src/zephyr_common/zephyr_arm_ros2:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_common/zephyr_arm_ros2.git
         version: main
 
     #zephyr_teleop
@@ -116,4 +125,10 @@ repositories:
     src/zephyr_z1/z1_moveit_config:
         type: git
         url: git@jihulab.com:robot_group/z1/z1_moveit_config.git
+        version: main
+
+    # zephyr_z2
+    src/zephyr_z2:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_z2.git
         version: main
