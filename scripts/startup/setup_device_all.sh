@@ -99,9 +99,14 @@ install_managed_file "$SCRIPT_DIR/99-zephyr-orbbec-gemini305.rules" 0644 \
   "$UDEV_DIR/99-zephyr-orbbec-gemini305.rules"
 copy_file_if_needed "$SCRIPT_DIR/99-odin-usb.rules" 0644 "$UDEV_DIR/99-odin-usb.rules"
 
+if grep -aq 'Seeed recomputer classic Robotics' /proc/device-tree/model 2>/dev/null; then
+  log "Installing validated J401 CAN driver and boot configuration"
+  bash "$SCRIPT_DIR/setup_j401_can.sh"
+fi
+
 log "Installing device setup service files: $DEVICE_SETUP_SERVICE_NAME"
 mkdir -p "$SYSTEMD_SCRIPT_DIR"
-copy_file_if_needed "$SCRIPT_DIR/$DEVICE_SETUP_SCRIPT" 0755 "$SYSTEMD_SCRIPT_DIR/$DEVICE_SETUP_SCRIPT"
+install_managed_file "$SCRIPT_DIR/$DEVICE_SETUP_SCRIPT" 0755 "$SYSTEMD_SCRIPT_DIR/$DEVICE_SETUP_SCRIPT"
 mkdir -p "$SYSTEMD_DIR"
 copy_file_if_needed "$SCRIPT_DIR/$DEVICE_SETUP_SERVICE" 0644 "$SYSTEMD_DIR/$DEVICE_SETUP_SERVICE"
 

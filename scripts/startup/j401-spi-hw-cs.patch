@@ -1,0 +1,12 @@
+--- a/spi-tegra114.c
++++ b/spi-tegra114.c
+@@ -880,6 +880,9 @@
+ 				command1 &= ~SPI_CS_SW_VAL;
+ 		}
+ 
++		tspi->use_hw_based_cs = true;
++		command1 &= ~(SPI_CS_SW_HW | SPI_CS_SW_VAL);
++
+ 		if (!tspi->prod_list) {
+ 			if (tspi->last_used_cs != spi_get_chipselect(spi, 0)) {
+ 				if (cdata && cdata->tx_clk_tap_delay)
