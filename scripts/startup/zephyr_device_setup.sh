@@ -4,6 +4,7 @@ modprobe can
 modprobe can_raw
 modprobe mttcan
 
+CAN0_BITRATE=1000000
 CAN1_BITRATE=1000000
 if grep -aq 'Seeed recomputer classic Robotics' /proc/device-tree/model 2>/dev/null; then
     modprobe spi_tegra114
@@ -17,11 +18,12 @@ if grep -aq 'Seeed recomputer classic Robotics' /proc/device-tree/model 2>/dev/n
     # Set INT to GPIO before opening MCP2518FD, otherwise IRQ may be disabled.
     ip link set can1 down
     /etc/systemd/zephyr_j401_can_prepare.sh
-    CAN1_BITRATE=500000
+    # Current wiring: CAN0 Ranger Mini V3, CAN1 RS arm.
+    CAN0_BITRATE=500000
 fi
 
 ip link set can0 down
-ip link set can0 type can bitrate 1000000
+ip link set can0 type can bitrate "$CAN0_BITRATE"
 ip link set can0 txqueuelen 1000
 ip link set can0 up
 ip link set can1 down

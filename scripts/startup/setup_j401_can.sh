@@ -66,5 +66,5 @@ systemctl daemon-reload
 systemctl enable zephyr_device_setup.service
 # Do not start standby service here: a diagnostic gpioset may own GPIO 4.
 # The device setup script starts it at boot, before bringing CAN1 up.
-echo 'Installed for next boot: CAN0 1 Mbps, CAN1 500 kbps. No CAN frames sent.'
+echo 'Installed for next boot: CAN0 500 kbps (Ranger), CAN1 1 Mbps (RS arm). No CAN frames sent.'
 echo 'Verify after reboot: ip -s -d link show can1; timeout 10 candump can1'

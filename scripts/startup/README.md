@@ -46,8 +46,8 @@ The fix has three parts:
 - Before opening CAN1, clear only the SFIO bit of PY.04 (`0x0243d020`) so the
   MCP2518FD INT signal is handled as GPIO, preventing the IRQ storm.
 - Hold CAN1 standby GPIO low with a persistent systemd service. Configure
-  CAN0 at 1 Mbps and CAN1 at 500 kbps for Ranger Mini V3. Other boards retain
-  the existing 1 Mbps CAN1 configuration.
+  CAN0 at 500 kbps for Ranger Mini V3 and CAN1 at 1 Mbps for the RS arm.
+  Other boards retain the existing 1 Mbps configuration on both interfaces.
 
 The installer leaves the vendor module intact and installs an override under
 `/lib/modules/6.8.12-1021-tegra/updates/zephyr/`. It installs the startup files
@@ -56,7 +56,7 @@ The startup script starts the GPIO service. A kernel update requires rebuilding
 and revalidating this fix. An image containing SPI in initrd is rejected rather
 than silently retaining an old boot module.
 
-Validation on the affected board: hardware loopback 100/100; Ranger passive
+Validation before swapping the CAN wiring: CAN1 hardware loopback 100/100; Ranger passive
 reception at 500 kbps received 14,121 frames in 15 seconds with zero CAN errors.
 No motion commands were sent. Boot persistence must be verified after reboot.
 
