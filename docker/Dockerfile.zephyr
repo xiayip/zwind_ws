@@ -115,8 +115,8 @@ ARG TSINGHUA_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 RUN python3 -m pip install --break-system-packages --no-cache-dir --upgrade --ignore-installed pip && \
     python3 -m pip install --break-system-packages --no-cache-dir --ignore-installed \
-        livekit==1.1.5 \
-        livekit-api==1.1.0 \
+        livekit==1.1.21 \
+        livekit-api==1.2.2 \
         supabase==2.30.0
 
 # LeRobot — installed last (may pull an incompatible torch); restore CUDA-13 torch afterwards
