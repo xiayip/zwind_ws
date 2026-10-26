@@ -14,6 +14,15 @@ WS_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
 
 source "${SCRIPT_DIR}/print_color.sh"
 
+# Single host configuration entry point for both new containers and new
+# terminals attached to an existing container. Do not source this Docker env file.
+ROBOT_ENV_FILE="/etc/zephyr/robot.env"
+if [[ ! -f "$ROBOT_ENV_FILE" || ! -r "$ROBOT_ENV_FILE" ]]; then
+    print_error "Required robot config is missing or unreadable: $ROBOT_ENV_FILE"
+    print_error "Install enrollment credentials with scripts/install_robot_credentials.py first."
+    exit 1
+fi
+
 # --------------- Defaults ------------------------------------------------------------------------
 ZEPHYR_DEV_DIR="${ZEPHYR_WS:-$(cd "${WS_DIR}/.." && pwd)}"
 SKIP_IMAGE_BUILD=0
@@ -35,11 +44,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Keep Codex IDE/CLI state outside the disposable container. The container is
+# Keep IDE/agent state outside the disposable container. The container is
 # launched with --rm, so anything stored only under /home/admin would otherwise
-# be deleted when the container exits. Override CODEX_STATE_DIR when a different
+# be deleted when the container exits. Override any *_STATE_DIR when a different
 # persistent host location is preferred.
+#   Codex:   IDE/CLI history and configuration
+#   VS Code: server, extensions, Copilot Chat sessions and agent session data
+#   Claude:  agent transcripts, credentials and memory
+#   Copilot: Copilot CLI state
 CODEX_STATE_DIR="${CODEX_STATE_DIR:-${ZEPHYR_DEV_DIR}/.codex-container}"
+VSCODE_SERVER_STATE_DIR="${VSCODE_SERVER_STATE_DIR:-${ZEPHYR_DEV_DIR}/.vscode-server-container}"
+CLAUDE_STATE_DIR="${CLAUDE_STATE_DIR:-${ZEPHYR_DEV_DIR}/.claude-container}"
+COPILOT_STATE_DIR="${COPILOT_STATE_DIR:-${ZEPHYR_DEV_DIR}/.copilot-container}"
+AGENT_STATE_MOUNTS=(
+    "$CODEX_STATE_DIR:/home/admin/.codex"
+    "$VSCODE_SERVER_STATE_DIR:/home/admin/.vscode-server"
+    "$CLAUDE_STATE_DIR:/home/admin/.claude"
+    "$COPILOT_STATE_DIR:/home/admin/.copilot"
+)
 
 # Zephyr recording sessions must outlive this disposable (--rm) development
 # container. The standalone zephyr-data-agent mounts the same host directory.
@@ -52,10 +74,13 @@ if [[ ! -d "$ZEPHYR_DEV_DIR" ]]; then
     exit 1
 fi
 
-if [[ -e "$CODEX_STATE_DIR" && ! -d "$CODEX_STATE_DIR" ]]; then
-    print_error "Codex state path exists but is not a directory: $CODEX_STATE_DIR"
-    exit 1
-fi
+for STATE_MOUNT in "${AGENT_STATE_MOUNTS[@]}"; do
+    STATE_DIR="${STATE_MOUNT%%:*}"
+    if [[ -e "$STATE_DIR" && ! -d "$STATE_DIR" ]]; then
+        print_error "Agent state path exists but is not a directory: $STATE_DIR"
+        exit 1
+    fi
+done
 
 if [[ -e "$ZEPHYR_RECORDINGS_DIR" && ! -d "$ZEPHYR_RECORDINGS_DIR" ]]; then
     print_error "Zephyr recordings path exists but is not a directory: $ZEPHYR_RECORDINGS_DIR"
@@ -67,8 +92,11 @@ if [[ ! "$ZEPHYR_DATA_GID" =~ ^[1-9][0-9]*$ ]]; then
     exit 1
 fi
 
-mkdir -p "$CODEX_STATE_DIR"
-chmod 700 "$CODEX_STATE_DIR"
+for STATE_MOUNT in "${AGENT_STATE_MOUNTS[@]}"; do
+    STATE_DIR="${STATE_MOUNT%%:*}"
+    mkdir -p "$STATE_DIR"
+    chmod 700 "$STATE_DIR"
+done
 
 mkdir -p "$ZEPHYR_RECORDINGS_DIR"
 
@@ -99,7 +127,7 @@ fi
 if [ "$(docker ps -a --quiet --filter status=running --filter name=$CONTAINER_NAME)" ]; then
     print_info "Attaching to running container: $CONTAINER_NAME"
     ZEPHYR_WS=$(docker exec "$CONTAINER_NAME" printenv ZEPHYR_WS)
-    docker exec -it -u admin --workdir "$ZEPHYR_WS" "$CONTAINER_NAME" /bin/bash
+    docker exec --env-file "$ROBOT_ENV_FILE" -it -u admin --workdir "$ZEPHYR_WS" "$CONTAINER_NAME" /bin/bash
     exit 0
 fi
 
@@ -138,8 +166,10 @@ DOCKER_ARGS+=("-e HOST_USER_UID=$(id -u)")
 DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
 DOCKER_ARGS+=("-e ZEPHYR_DATA_GID=$ZEPHYR_DATA_GID")
 
-# Codex stores IDE/CLI history, configuration, and other local state here.
-DOCKER_ARGS+=("-v $CODEX_STATE_DIR:/home/admin/.codex")
+# IDE/agent history, configuration, and other local state (see *_STATE_DIR).
+for STATE_MOUNT in "${AGENT_STATE_MOUNTS[@]}"; do
+    DOCKER_ARGS+=("-v $STATE_MOUNT")
+done
 
 # The ROS recorder writes partial sessions under recorder/handoff and seals
 # them by atomically renaming the completed directory into agent/ready.
@@ -163,13 +193,8 @@ if [[ -d "$HOME/.ssh" ]]; then
     DOCKER_ARGS+=("-v $HOME/.ssh:/home/admin/.ssh:ro")
 fi
 
-# Robot environment file
-ROBOT_ENV_FILE="/etc/zephyr/robot.env"
-if [[ -f "$ROBOT_ENV_FILE" ]]; then
-    DOCKER_ARGS+=("--env-file $ROBOT_ENV_FILE")
-else
-    print_warning "Robot environment file not found: $ROBOT_ENV_FILE (skipping --env-file)"
-fi
+# Inject the host config into every process launched in a new container.
+DOCKER_ARGS+=("--env-file $ROBOT_ENV_FILE")
 
 # Platform-specific mounts (Jetson / aarch64)
 if [[ "$PLATFORM" == "aarch64" ]]; then
