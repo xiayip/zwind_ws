@@ -84,6 +84,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         # Visualization / debugging
         ros-jazzy-foxglove-bridge \
         ros-jazzy-plotjuggler-ros \
+        ros-jazzy-teleop-twist-keyboard \
     && rm -rf /var/lib/apt/lists/*
 
 # Full Nav2 metapackage (separate layer — large, changes rarely)
