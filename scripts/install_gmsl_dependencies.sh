@@ -3,7 +3,8 @@
 set -euo pipefail
 [[ -f /.dockerenv ]] || { echo 'Run inside the Zephyr development container.' >&2; exit 1; }
 packages=(v4l-utils ros-jazzy-rclcpp-components ros-jazzy-image-transport
-  ros-jazzy-compressed-image-transport ros-jazzy-camera-info-manager libopencv-dev)
+  ros-jazzy-compressed-image-transport ros-jazzy-camera-info-manager
+  ros-jazzy-std-msgs ros-jazzy-std-srvs libopencv-dev libopencv-contrib-dev python3-yaml)
 missing=()
 for package in "${packages[@]}"; do
   if [[ $(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true) != 'install ok installed' ]]; then

@@ -1,0 +1,16 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zephyr 前后方全景</title>
+<style>body{margin:20px auto;max-width:1280px;background:#14191f;color:#eef3f8;font:16px system-ui}h1{font-size:24px}img{width:100%;background:#000}button{padding:8px 16px;margin:8px}#status{padding:12px;background:#253341}.note{color:#b4c3d1}body.stale #status{background:#71382c}</style>
+<h1>Zephyr 相机拼接预览</h1><div id="status">正在连接…</div>
+<button id="toggle">显示接缝</button><span class="note">网页约 1 fps；ROS 画面独立发布。近处物体仍可能有视差。</span>
+<img id="image" alt="拼接画面"><p class="note">标定自动保存保持关闭。此页面只查看画面，不控制机器人或采集。</p>
+<script>
+let debug=false,lastPublished=-1,lastProgress=Date.now();
+document.getElementById('toggle').onclick=()=>{debug=!debug;document.getElementById('toggle').textContent=debug?'隐藏接缝':'显示接缝';refreshImage()};
+function refreshImage(){document.getElementById('image').src=(debug?'debug.jpg':'panorama.jpg')+'?t='+Date.now()}
+async function update(){try{const response=await fetch('status.json?t='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('等待节点');const s=await response.json();if(s.published!==lastPublished){lastPublished=s.published;lastProgress=Date.now()}
+const stale=Date.now()-lastProgress>2500||s.state!=='running';document.body.classList.toggle('stale',stale);
+document.getElementById('status').textContent=(stale?'画面未更新 / ':'运行中 / ')+s.view+' | ROS '+s.fps.toFixed(1)+' fps | 处理 '+s.render_ms.toFixed(1)+' ms | 帧间差 '+s.pair_delta_ms.toFixed(1)+' ms | '+(s.adaptive_seam?'自适应接缝':'固定接缝')+' | 参考球面 '+s.reference_depth_m+' m';if(!stale)refreshImage();
+}catch(e){document.body.classList.add('stale');document.getElementById('status').textContent='连接中断或节点尚未启动；显示的可能是旧画面';}}
+update();setInterval(update,1000);
+</script></html>

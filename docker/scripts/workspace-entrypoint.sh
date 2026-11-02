@@ -35,6 +35,21 @@ adduser ${USERNAME} video >/dev/null
 adduser ${USERNAME} plugdev >/dev/null
 adduser ${USERNAME} sudo  >/dev/null
 
+# Match the host DRM render-node GIDs before gosu initializes supplementary
+# groups. Jetson VIC/NvBufSurface needs these even in a privileged container.
+# A container's group name may differ from the host's "render" group name.
+for ZEPHYR_RENDER_DEVICE in /dev/dri/renderD*; do
+  [[ -c "${ZEPHYR_RENDER_DEVICE}" ]] || continue
+  ZEPHYR_RENDER_GID="$(stat -c %g "${ZEPHYR_RENDER_DEVICE}")"
+  [[ "${ZEPHYR_RENDER_GID}" != 0 ]] || continue
+  ZEPHYR_RENDER_GROUP="$(getent group "${ZEPHYR_RENDER_GID}" | cut -d: -f1)"
+  if [[ -z "${ZEPHYR_RENDER_GROUP}" ]]; then
+    ZEPHYR_RENDER_GROUP="zephyr-render-${ZEPHYR_RENDER_GID}"
+    groupadd --gid "${ZEPHYR_RENDER_GID}" "${ZEPHYR_RENDER_GROUP}" || exit 1
+  fi
+  usermod -aG "${ZEPHYR_RENDER_GROUP}" "${USERNAME}" || exit 1
+done
+
 # Register the shared recordings group inside the container before gosu
 # initializes the user's supplementary groups. Docker's --group-add alone is
 # lost when gosu switches from root to the workspace user.

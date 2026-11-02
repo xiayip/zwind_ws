@@ -1,5 +1,28 @@
 # 2026-10-09 Zephyr 工作区整合记录
 
+## 2026-10-28：后两路标定验证与前后拼接静态预览
+
+保持保存暂停；后左33/后右39张原图经修正角点、去重得到31/36个姿态，留出RMS为0.516/0.347px。
+后方16组共同姿态拟合相对外参，双向留出误差0.495/0.860px。没有前后相机之间的侧面共同观测，
+所以完整四相机坐标系仍待补采。新增四路候选 YAML，并明确未部署到 CameraInfo/TF。
+在原开发 Docker 中订阅当前四路画面，生成前、后180°静态拼接预览，证实近处视差仍需处理。
+新增离线诊断脚本和记录；未修改运行时 C++、系统配置、依赖、Docker 镜像或启动参数。
+详见 [四路标定审查](calibration-surround-2026-10-28.md)。
+
+## 2026-10-28：第二轮数据审查与角点定位修复
+
+按用户要求暂停保存。前两路各33张原图，重新提取角点并再次去重后前左24、前右27个姿态；
+留出重投影RMS约0.19/0.36px。公共观测15组去重为11组，外参留出检查约0.63px，足够推进首版前方拼接。
+修复C++固定3px精细定位窗口，改为随标签大小调整。原PNG和观察记录未覆盖；新预览仍为暂停。
+完整角度模型离线诊断、回归测试、依赖隔离和产物位置见 [第二轮审查](calibration-round2-2026-10-28.md)。
+
+## 2026-10-28：AprilGrid 实物核对、自动采集与内参候选工具
+
+新增 C++ 标定采集组件、单一 launch、网页计数与提示音、5×5/80mm/24mm 参数、离线内参候选工具。
+继续使用原 Zephyr Docker；没有宿主驱动、内核、设备树或镜像改动。现有依赖足够，未安装软件。
+首轮数据去重后前左11、前右7、后左2、后右1个姿态，前两路公共观测5组；暂停并保留全部数据，未部署标定。
+修改、备份、验证及下一轮采集说明见 [标定记录](calibration-2026-10-28.md)。
+
 基线：zephyr_ws HEAD `a95e441e9fd198430937473f129b4a4c7387419e`，开始时 git status 干净。
 开发容器已有全工作区 colcon 编译及其他任务；本次不重建、不重启该容器。
 
@@ -65,3 +88,156 @@
 - 已验证通过 `target_container` 加载进已有容器，加载命令退出后组件继续运行；intra-process 开启时 JPEG 360 帧/12 秒、30.00 fps。没有声称完整图像处理管线已实现零拷贝。
 - 测试前备份整个包（含原 Git 索引）：`~/j401-gmsl/backups/cpp-component/`。操作、编译及失败/成功测试日志保存于工作区 `log/gmsl_camera/cpp-component/`。
 - 最终卸载检查：共享容器仍运行，`/proc/<pid>/fd` 和 `maps` 均无相机 FD/MMAP 残留。另启动启用 intra-process 的采集组件实测 Ctrl+C，组件容器 clean exit，launch 返回 0。测试节点和容器已停止，设备留给用户下一次启动。
+
+## 2026-10-19：四相机与环视话题准备
+
+- 四路均有真实 1080p 图像，硬件同时各采 600 帧，均 30 fps。
+- 新增四路 launch 与基于传感器标识的 YAML 映射，暂用 `/cameras/port0`～`port3`，等待确认实际安装方位。
+- C++ 增加独立 camera_name；提供逐路标定 URL，未生成虚构内外参、TF 或 BEV。
+- Docker 内四路 C++ 同进程订阅 20 秒收到 600/599/599/599 帧，均约 30 fps，CameraInfo 时间戳匹配。
+- 跨进程 Python 订阅四路 raw 为 7.68～12.82 fps，JPEG 为 19.11～23.80 fps，未通过 ≥25 fps 标准；保留完整结果。
+- 复用现有开发 Docker，依赖检查无需安装；没有内核、设备树、Docker 配置或镜像变更。
+- 测试已结束，四路设备释放，开发容器保留运行。没有提交或推送。
+- 完整变更、备份、复测方法及限制见 [四相机验证记录](four-camera-2026-10-19.md)。
+
+## 2026-10-19：用户确认方位与硬件翻转调研
+
+- 用户确认 0=front_right、1=front_left、2=back_left、3=back_right，已更新配置、README 和验证脚本默认名称。
+- 四个方位话题、frame ID、独立标定名及 CameraInfo 匹配已实际验证；测试结束释放设备。
+- VIC 离线测试验证上下翻转、左右翻转和 180°旋转；普通 admin 用户下，1080p YUYV→RGBA＋上下翻转约 1.52 ms，含 CPU 复制/同步约 3.92 ms。
+- 补齐当前 Docker admin 对宿主 DRM render 节点 GID 993 的组权限，并修改 workspace-entrypoint 按实际 GID 自动设置，便于其他板子复用。
+- 未将 VIC 或翻转接入生产采集代码；图像方向保持不变，没有改变内核、设备树、系统服务或持久库路径。
+- 完整结果、限制、Docker 修改与备份见 [方位及 VIC 验证记录](camera-directions-and-flip-2026-10-19.md)。
+
+## 2026-10-19：180°旋转性能对比（仅离线诊断）
+
+- 用户确认需要旋转180°。比较 CPU RGB8 后旋转、NEON YUYV 重排后转换、融合 NEON 原型以及 VIC 路径。
+- 当前配置下 NEON YUYV 重排＋RGB8 转换约 1.60 ms/帧；VIC 完整 RGB8 单线程输出约 3.81 ms，累计 CPU 时间约 2.65 ms。
+- 硬件缓冲区内 VIC 转换＋旋转约 1.50 ms，未包含 CPU 输入/输出；建议后续 BEV 合并方向映射，避免独立旋转中间图。
+- 真实帧和全幅随机输入的 NEON 输出与 OpenCV 参考逐字节一致。没有把诊断原型部署到采集节点，没有改动系统或 Docker 配置。
+- 全部数据、适用条件与限制见 [180°旋转对比](rotation-benchmark-2026-10-19.md)。
+
+## 2026-10-28：C++双鱼眼拼接包
+
+- 新增 `src/zephyr_perception/zephyr_surround_vision`，C++可组合节点，单launch启动前对相机、拼接及网页。
+- KB4 LUT投影、有限深度球面假设、亮度补偿、自适应接缝；默认1024×512、180°×90°、目标20 Hz。
+- 实测同进程C++约19.65 fps，单独JPEG约19.46 fps；多路跨进程订阅仍掉帧，失败结果保留。
+- 六个单元用例通过；真实图像/JPEG/掩码格式、时间戳、断流停止及正常关闭验证完成。
+- 工作区gitignore仅放行新包；README和本次记录补齐。原驱动与标定数据保留；未修改Docker、系统依赖或驱动配置。
+- 旧标定预览停止，标定保存关闭；交付时前方拼接和8892网页保持运行。
+- 这是几何和自适应接缝首版，尚无学习模型、完整360°、地面BEV或Quest编码传输。
+- 详见[源码、启动、性能和变更记录](panorama-package-2026-10-28.md)。
+
+## 2026-10-28：Z2 launch-all 接入前后拼接
+
+- z2_bringup新增surround.launch.py，launch-all默认启动四路相机、前后两个拼接组件与8892/8893预览。
+- 复用panorama自带驱动加载，不重复启动四路驱动；scoped GroupAction隔离RTC同名target_container参数。
+- 增加关闭全部环视、只开前视和关闭网页的参数，以及包运行依赖和README。
+- 编译通过，实际环视分支前后同时出图，20秒窗口节点报告约20 Hz；无输入或渲染错误，关闭后正常释放设备。
+- 整机launch未重启，原独立前视预览已恢复；下次启动launch-all前需先停止独立前视。
+- 无系统/Docker修改，无Git提交。详见[接入与验证记录](z2-bringup-integration-2026-10-28.md)。
+
+## 2026-10-28：前视全景接入 LiveKit
+
+- teleop_rtc_cpp新增显式配置的JSON状态转发；保持robot_state的messageType/data包装，状态对象位于data.data。
+- Z2 RTC配置增加front视频；保留wrist_camera，back视频暂未启用。配置前后两个status数据轨道，按对应ROS状态到达发送。
+- 编译、新增隔离ROS回归测试通过；测试发现并修复重新初始化时重复状态订阅。
+- 实际连接LiveKit并发布front及/surround/front/status；后端拒绝schema元数据组合，现有逻辑回退为无format metadata轨道，JSON载荷不变。
+- 独立观察者token被后端固定到机器人身份，程序拒绝入房，未声称Quest接收验证完成。发送端真实状态样本和运行日志保留。
+- 当前前视与RTC同组件容器运行；未启动整机控制。后续仍用launch-all，先停止调试前视会话。
+- 无系统/Docker依赖变更，无Git提交。详见[RTC接入与Quest协议](rtc-panorama-2026-10-28.md)。
+
+## 2026-10-28：用户启动日志检查与残留清理
+
+用户18:11启动launch-all时，8892被此前调试遗留的python HTTP服务PID275668占用。
+检查确认旧独立前视launch PID275563已退出，当时无surround_container进程。
+核验残留进程命令确为本工作区front预览后发送SIGINT，释放8892。
+未重启整机控制、未改系统/Docker配置、未清空共享内存。
+日志另含Fast DDS fastrtps_port7000锁初始化错误，以及FIFO实时调度权限/200 Hz循环超时警告，
+与HTTP端口冲突分别记录；不能由HTTP问题推断其原因。
+
+## 2026-10-28：预览默认关闭与CameraInfo空URL修复
+
+- 整机、环视和独立panorama的预览端口默认均改为0；需要时显式开启。
+- 空camera_info_url明确初始化未标定CameraInfo，避免库延迟查找不存在的默认文件；显式URL仍正常加载。
+- 三包编译通过；四路CameraInfo与前后真实拼接图像检查通过，没有默认标定文件报错，8892/8893未监听。
+- 只运行环视分支测试，测试完成关闭，未启动整机控制；没有系统或Docker修改。
+- 详见[修复与验证记录](preview-camera-info-2026-10-28.md)。
+
+## 2026-10-28 — Front near/far parallax investigation (candidate only)
+
+- Paused BEV work. Read-only subscriptions saved six original front pairs and five
+  near-board pairs under `log/surround_vision/parallax-20261028/`. Selected timestamp
+  differences: 2.627 ms for room pair 02, 4.173 ms for near-board pair 04; these
+  timestamps do not prove hardware exposure synchronization.
+- Reproduced omission/duplication with a fixed center seam using the same pair and
+  sphere radii 1, 1.5, 2, 3, 5 m and infinity. The board is present in both original
+  images. The existing adaptive seam already avoided the complete board in the
+  saved static sample; do not describe a fixed-seam comparison as an improvement
+  over that existing adaptive result.
+- Unconstrained dense flow and coarse depth-sweep prototypes produced visible
+  structural deformation/incorrect depths and were not deployed.
+- Added opt-in C++ `parallax` seam mode: mutual ORB matches, calibrated epipolar
+  filtering, penalties for cuts between corresponding feature projections,
+  low-feature fallback, and conflict diagnostics. This guards source selection;
+  it does not solve all-depth registration, occlusion, or unobserved content.
+- Added opt-in `primary_a` mode: central content prefers camera A, moving the
+  transition toward the side within source support and the configured seam search
+  angle. Residual parallax moves to the periphery. It is not a metric view or an
+  all-scene correction. Existing projection/calibration and image topics remain.
+- Extended `render_pair` with pre-composite projection exports and a bounded static
+  benchmark. Added isolated namespace/container launch arguments and front/rear
+  mode selectors to `z2_bringup` launch-all. Defaults remain `adaptive` and preview
+  ports remain 0; no LiveKit track/config changes.
+- Source backup: `/home/nvidia/j401-gmsl/backups/parallax-20261028/`. Candidate build
+  and install live only under `log/surround_vision/parallax-20261028/{build,install}`.
+  Never rebuilt over mapped production libraries. No robot/chassis/arm restart.
+- Nine C++ tests passed. A 25-second subscriber-only candidate launch shut down
+  cleanly. It produced valid 1024x512 images with zero input/render errors and
+  active correspondence protection, but failed real-time acceptance: candidate
+  status FPS median ~0.98 (maximum 2.73), JPEG receive ~0.69 FPS, while the existing
+  production front stream reported median ~17.97 FPS. This extra cross-process raw
+  subscriber path differs from normal intra-process operation; do not attribute
+  the whole drop to the seam algorithm or claim production performance from it.
+- Static same-pair benchmarks exclude ROS transport/JPEG/network, with seam update
+  every 10 render calls. Detailed results and exact scope are in
+  `log/surround_vision/parallax-20261028/benchmark-final.json` and the primary-mode
+  follow-up. They are not Quest end-to-end latency measurements.
+- No system packages, drivers, Docker image, or Docker launch configuration were
+  changed. A local analysis-only Python venv was created and ignored; its pinned
+  packages are in local `artifacts/parallax-20261028/analysis-requirements.txt`.
+- Production has NOT switched to either candidate. A deliberate deployment and
+  normal coordinated restart are still required before using new mode selectors
+  with the main install. The remaining goal is reliable multi-depth alignment and
+  moving-scene validation; this investigation is not a complete stitching fix.
+
+### Offline learned spatial warp comparison
+
+- Evaluated the official StabStitch++ spatial module from
+  https://github.com/nie-lang/StabStitch2 at commit
+  `646dad01f2f1159aeca10bcef2fbb1416d658df7`, using the released traditional-dataset
+  spatial weights. SHA256:
+  `45b05fce025a8072b1b4df70b673d62ef023f5e6008df9afadbc83db5f79ec0e`.
+- Ran locally on NVIDIA GB10 with an isolated PyTorch 2.14.1+cu130 venv. Downloaded
+  and extracted libpython3.12-dev 3.12.3-1ubuntu0.17 under the analysis directory
+  for Triton headers; CPATH applied to the evaluation process only. No global
+  packages or robot/Docker dependencies were installed. Images stayed local.
+- Compared room ERP crops, near-board ERP crops, calibrated perspective views,
+  and raw fisheyes using official 480x360 BGR preprocessing. Complete official
+  state_dict loaded strictly; only unnecessary ImageNet initialization disabled.
+  This tests the spatial module and custom diagnostic compositing, not the
+  complete temporal/smoothing pipeline or training/fine-tuning.
+- Saved outputs retain significant board/background displacement. Soft blending
+  exposes ghosting; a hard central cut clips or repeats board content. The
+  off-the-shelf model was not accepted or deployed. This result does not rule out
+  scene-specific training, other models, or reliable depth-aware reprojection.
+- Warm spatial-network-only means were 15.8–20.9 ms across these four cases on
+  GB10 (three timed warm samples each). Excludes final TPS, compositing, transport
+  and encoding; this is neither a Jetson benchmark nor a real-time qualification.
+- Learned output is an unconstrained mesh mosaic, not calibrated ERP. It must not
+  silently inherit the current Quest ERP ray interpretation or metric overlays.
+  Local `artifacts/parallax-20261028/learned/` contains images and report.json;
+  evaluation script, model provenance and pinned venv requirements are saved.
+- Latest bounded primary-source static run: 180 frames, mean 20.35 ms and p95
+  28.75 ms for rendering only. Central board is continuous, but the peripheral
+  water-stack region still has a discontinuity. No all-depth solution is claimed.

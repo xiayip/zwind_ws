@@ -1,6 +1,7 @@
 install/
 log/
-src/
+/src/*
+!/src/zephyr_perception/
 build/
 data/
 .dockerargs
@@ -9,3 +10,6 @@ outputs/
 .model_cache/
 __pycache__/
 *.py[cod]
+backend-enrollment/
+artifacts/
+/symlink_install_manifest.txt

@@ -5,6 +5,23 @@
 
 ## 日常启动
 
+四相机环视入口（2026-10-19）：
+
+```bash
+ros2 launch zephyr_gmsl_camera gmsl_surround.launch.py
+```
+
+四个 C++ 组件在同一个 ROS component container 中运行。用户已确认端口 0/1/2/3
+依次为 front_right/front_left/back_left/back_right，对应 `/cameras/<方位>/image_raw`，
+并发布独立的 `camera_info` 和 `image_raw/compressed`。相机包
+`config/surround_cameras.yaml` 保存该映射及各路标定 URL。
+详细映射、测试结果和操作记录见 [四相机验证记录](four-camera-2026-10-19.md)。
+启动前会检查四个传感器端口；全部存在才加载，避免缺一路时话题发生错配。
+Docker 需映射四路视频设备及 VI 设备，并可读取 `/sys/class/video4linux`。
+现有开发容器已经满足，本次没有更改 Docker 配置或镜像。
+
+以下单相机入口仍可独立使用；不要与四路入口同时占用同一个设备。
+
 在已经编译、加载工作区环境的 Zephyr 开发容器终端中，只运行一个 launch：
 
 ```bash
@@ -109,3 +126,29 @@ sudo reboot
 首次驱动调试记录已随工作区保存在 `docs/gmsl/bringup-history.md`。
 本次整合记录在 `docs/gmsl/integration-log.md`。原独立项目 `~/j401-gmsl` 保留作为调试档案；
 独立容器被停止且取消自动重启，不应与本工作区同时开启。
+
+## 双鱼眼拼接入口（2026-10-28）
+
+在原Docker中停止占用前两路的旧launch后，执行：
+
+```bash
+ros2 launch zephyr_surround_vision panorama.launch.py
+```
+
+一次启动相机和C++拼接组件；网页默认关闭，需显式传入 `preview_port:=8892` 开启。标定保存保持关闭。
+输出 `/surround/front/image_raw` 及 `/surround/front/image_raw/compressed`；
+网页 <http://192.168.88.121:8892/>。默认1024×512、目标20 Hz，近景视差仍有限制。
+详见[拼接实现及实测记录](panorama-package-2026-10-28.md)和
+[包README](../../src/zephyr_perception/zephyr_surround_vision/README.md)。
+
+## Z2 整机入口（2026-10-28）
+
+`ros2 launch z2_bringup z2_launch_all.launch.py` 默认包含四路GMSL相机和前/后拼接，
+无需另起相机或panorama。参数开关、当前运行状态和验证见
+[Z2接入记录](z2-bringup-integration-2026-10-28.md)。
+
+## Quest / LiveKit 前视接入（2026-10-28）
+
+前视视频track为 `front`；`back`仅预留、暂不发送后视视频。前后status配置为同名
+DataTrack `/surround/front/status`、`/surround/back/status`，在各自ROS状态发布时发送。
+JSON封装、实测和完整示例见[RTC接入记录](rtc-panorama-2026-10-28.md)。
