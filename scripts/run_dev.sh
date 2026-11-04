@@ -126,6 +126,10 @@ fi
 # Attach to running container
 if [ "$(docker ps -a --quiet --filter status=running --filter name=$CONTAINER_NAME)" ]; then
     print_info "Attaching to running container: $CONTAINER_NAME"
+    if ! docker exec -u admin "$CONTAINER_NAME" bash -c '(( $(ulimit -r) >= 50 ))'; then
+        print_warning "Existing container does not allow FIFO priority 50 for admin."
+        print_warning "Stop ROS, then recreate the container with this script to apply realtime limits (docker restart is insufficient)."
+    fi
     ZEPHYR_WS=$(docker exec "$CONTAINER_NAME" printenv ZEPHYR_WS)
     docker exec --env-file "$ROBOT_ENV_FILE" -it -u admin --workdir "$ZEPHYR_WS" "$CONTAINER_NAME" /bin/bash
     exit 0
@@ -152,6 +156,11 @@ if [[ -z $(docker image ls --quiet "$BASE_NAME") ]]; then
 fi
 
 # --------------- Docker run arguments ------------------------------------------------------------
+# controller_manager requests SCHED_FIFO 50; Servo uses a lower priority.
+# --privileged alone does not raise the non-root user's RLIMIT_RTPRIO.
+# Keep the ceiling at the priority actually needed, not the kernel maximum.
+DOCKER_ARGS+=("--ulimit rtprio=50:50")
+
 # Display / GPU
 DOCKER_ARGS+=("-v /tmp/.X11-unix:/tmp/.X11-unix")
 DOCKER_ARGS+=("-v $HOME/.Xauthority:/home/admin/.Xauthority:rw")

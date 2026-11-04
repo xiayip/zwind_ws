@@ -26,6 +26,37 @@ directory.
 ./run_dev_with_build.sh
 ```
 
+## Controller real-time scheduling
+
+New containers started by `scripts/run_dev.sh` allow the `admin` user to request
+FIFO priorities up to 50 (`--ulimit rtprio=50:50`). This covers the default
+ros2_control control thread and Servo's lower priority. The existing privileged
+container setting alone does not raise this user limit.
+
+After updating the launcher, stop ROS and recreate the development container;
+`docker restart` or reattaching retains the old limits. Run on the host:
+
+```bash
+docker stop zephyr_dev_24.04-aarch64-container
+./scripts/run_dev.sh -b
+```
+
+The launcher uses `--rm`; save any needed files outside mounted workspace/state
+directories before stopping it. A new image build is not required.
+Inside the recreated container, verify as `admin`:
+
+```bash
+cd /workspaces/zephyr-dev/zephyr_ws
+python3 scripts/check_realtime.py
+```
+
+The check briefly requests FIFO 50 and immediately restores its original policy.
+It starts no ROS nodes and sends no robot commands. Expect `fifo_verified: true`.
+This addresses scheduling permission, not a guarantee that a loaded control loop
+meets every 5 ms deadline. Keep 200 Hz and measure overruns under the same camera,
+RTC and motion workload before further tuning. See the
+[ros2_control scheduling documentation](https://control.ros.org/jazzy/doc/ros2_control/controller_manager/doc/userdoc.html#determinism).
+
 ## Robot identity and credentials
 
 The host's `/etc/zephyr/robot.env` is the single configuration used by both
