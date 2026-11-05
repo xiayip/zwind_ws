@@ -10,16 +10,11 @@ repositories:
         version: ros2
     # OCS2 core + ROS 2 interfaces: v1.4.0, pinned to the validated release.
     # Do not also import leggedrobotics/ocs2 (ROS 1) or arms_ros2_control.
+    # Build the required library subset with BUILD_TESTING=OFF (see README).
     src/zephyr_manipulation/ocs2_ros2:
         type: git
         url: https://github.com/legubiao/ocs2_ros2.git
         version: 67a3c6fe71f2218b10d4a49b8a4b5db4e5ed619f
-    # Same revision as v1.4.0's robotic-assets submodule, imported separately
-    # for upstream build/test dependencies without unrelated perception submodules.
-    src/zephyr_manipulation/ocs2_robotic_assets:
-        type: git
-        url: https://github.com/legubiao/ocs2_robotic_assets.git
-        version: a9bed8e84585d032cb1ab6b89690c1d59ea22ed4
     src/zephyr_manipulation/lerobot_zephyr:
         type: git
         url: git@jihulab.com:robot_group/zephyr_manipulation/lerobot_zephyr.git

@@ -51,17 +51,17 @@ after credential changes. Direct `docker exec` calls into an old container need
 ## MPC / OCS2 development dependencies
 
 This workspace uses [ocs2_ros2 v1.4.0](https://github.com/legubiao/ocs2_ros2/tree/v1.4.0)
-from source. `dev.repos` pins its commit and the matching `ocs2_robotic_assets`
-revision. The ROS 2 repository contains both the OCS2 algorithms and ROS interfaces;
+from source. `dev.repos` pins its commit. The ROS 2 repository contains both the
+OCS2 algorithms and ROS interfaces;
 do not also import the ROS 1 `leggedrobotics/ocs2` repository or `arms_ros2_control`.
 
 - **Image:** Ubuntu Boost, Eigen, OpenMP, URDF development headers, ROS Pinocchio,
   ROS control/message/TF dependencies, and Qt/RViz development dependencies.
   The existing ROS layer already installs `moveit_msgs`, `interactive_markers`,
   `ros2_control` and RViz. Do not mix system Boost with a source installation in `/usr`.
-- **Source:** `ocs2_ros2` and `ocs2_robotic_assets` under `src/zephyr_manipulation`.
-  The assets are upstream build/test fixtures, not the Zephyr robot model.
-  They are imported separately; do not also initialize the duplicate assets submodule.
+- **Source:** `ocs2_ros2` under `src/zephyr_manipulation`. The Zephyr controller
+  uses our own robot model; `ocs2_robotic_assets` is not imported by default.
+  Do not recursively initialize unrelated upstream example submodules.
 - **Managed by OCS2:** CppAD/CppADCodeGen headers are bundled. BLASFEO and HPIPM
   are fetched at upstream-pinned commits during the first build, which requires
   GitHub access. They are needed through `ocs2_sqp`, even when our controller uses DDP.
@@ -87,7 +87,7 @@ cd /workspaces/zephyr-dev/zephyr_ws
 source /opt/ros/jazzy/setup.bash
 CMAKE_BUILD_PARALLEL_LEVEL=2 colcon build --symlink-install --executor sequential \
   --packages-up-to ocs2_mobile_manipulator ocs2_ros_interfaces ocs2_self_collision_visualization \
-  --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+  --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 source install/setup.bash
 ros2 pkg prefix ocs2_mobile_manipulator
 ```
@@ -96,6 +96,13 @@ The reported prefix should be this workspace's `install/ocs2_mobile_manipulator`
 not a directory under `log/`. The targeted build excludes unrelated upstream
 advanced examples (RaiSim, MPC-Net and perceptive locomotion); this dependency set
 is not intended to build every OCS2 example with an unfiltered `colcon build`.
+`BUILD_TESTING=OFF` applies to this third-party library build: the upstream
+`ocs2_mobile_manipulator` tests require the omitted `ocs2_robotic_assets` package.
+Keep our own `mpc_controller` tests enabled by explicitly using
+`-DBUILD_TESTING=ON` when building that package separately, after its dependencies
+are installed. Do not set `BUILD_TESTING=OFF` as a workspace-wide default.
+To run upstream robot-example tests later, import the assets revision specified
+by the pinned OCS2 checkout's `.gitmodules` and gitlink before enabling those tests.
 Do not load the old `log/mpc_*/environment.bash` scripts or copy their binaries
 into `install/`. Reconfigure/rebuild affected packages against the new source build.
 
