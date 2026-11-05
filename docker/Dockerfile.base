@@ -176,15 +176,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Textual requires a different version of pygments than installed by apt
 RUN python3 -m pip install --break-system-packages -I pygments textual
 
-# Debian's packaging has no pip RECORD; upgrading it directly fails during uninstall.
-# Bootstrap only this package as a pip-managed copy, leaving the apt files intact.
-RUN python3 -m pip install --break-system-packages \
-        --ignore-installed --no-deps packaging
-
 # Python3 PIP packages
+# Debian packages (including numpy and packaging) can lack pip RECORD files.
+# Install this dependency set into /usr/local without attempting to uninstall apt
+# packages. Keep --ignore-installed local to this step; later torch/kornia installs
+# must reuse the CUDA wheels already installed in the image.
 # NOTE: kornia is intentionally NOT here — it depends on torch and would pull a duplicate
 #       multi-GB torch from PyPI. It is installed after the official torch cu130 below.
-RUN python3 -m pip install -U --break-system-packages \
+RUN python3 -m pip install -U --break-system-packages --ignore-installed \
         Cython \
         ninja \
         argcomplete \
@@ -213,7 +212,8 @@ RUN python3 -m pip install -U --break-system-packages \
         opentelemetry-sdk==1.28.1 \
         opentelemetry-exporter-otlp
 
-RUN ln -sf /usr/lib/python3/dist-packages/numpy/core/include/numpy /usr/include/numpy || true
+# Compile against the same NumPy headers as the Python runtime installed above.
+RUN ln -sfn "$(python3 -c 'import numpy; print(numpy.get_include())')/numpy" /usr/include/numpy
 
 # MQTT binaries and libraries
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
