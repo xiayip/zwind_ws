@@ -27,7 +27,6 @@ ARG ISAAC_ROS_RELEASE=release-4.0
 ARG CUDA_PKG=13
 ARG CVCUDA_VERSION=0.14.0
 ARG TRITON_TARBALL=tritonserver.2.60-aarch64.tar.gz
-ARG BOOST_VERSION=1_80_0
 
 # Store list of packages (must be first)
 RUN mkdir -p /opt/nvidia/isaac_ros_dev_base && dpkg-query -W | sort > /opt/nvidia/isaac_ros_dev_base/base-start-packages.csv
@@ -314,15 +313,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get -y install libcusparselt0 libcusparselt-dev
 
-# Boost >= 1.78 for boost::span (apt ships < 1.78)
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    wget -q -O /tmp/boost.tar.gz \
-        https://archives.boost.io/release/${BOOST_VERSION//_/.}/source/boost_${BOOST_VERSION}.tar.gz \
-    && (cd /tmp && tar xzf boost.tar.gz) \
-    && cd /tmp/boost_${BOOST_VERSION} \
-    && ./bootstrap.sh --prefix=/usr \
-    && ./b2 install \
-    && rm -rf /tmp/boost*
+# Ubuntu 24.04 provides Boost 1.83 (including boost::span) through
+# libboost-all-dev above. Do not overwrite /usr with a second Boost version:
+# ROS/Pinocchio and OCS2 must resolve matching headers, libraries and CMake targets.
 
 # jtop (Jetson stats)
 RUN python3 -m pip install --break-system-packages -U jetson-stats

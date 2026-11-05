@@ -32,10 +32,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         # GMSL sensor-mode initialization and V4L2 diagnostics
         v4l-utils \
         # Boost / PCL / math
-        libboost-dev \
+        libboost-all-dev \
+        libeigen3-dev \
         libgeographiclib-dev \
+        # OCS2 source build: OpenMP; CppAD is bundled in ocs2_thirdparty
+        libomp-dev \
         libpcl-dev \
         libpcap-dev \
+        # OCS2 URDF interface and the MPC RViz panel
+        liburdfdom-dev \
+        liburdfdom-headers-dev \
+        qtbase5-dev \
         # Audio
         espeak \
         portaudio19-dev \
@@ -59,6 +66,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         # Dev tools
         ros-jazzy-ament-clang-format \
         ros-jazzy-ament-cmake-clang-format \
+        ros-jazzy-ament-lint-auto \
+        ros-jazzy-ament-lint-common \
         # Navigation
         ros-jazzy-nav2-bringup \
         ros-jazzy-twist-mux \
@@ -75,6 +84,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ros-jazzy-moveit-task-constructor-visualization \
         ros-jazzy-osqp-vendor \
         ros-jazzy-pinocchio \
+        ros-jazzy-realtime-tools \
         ros-jazzy-ruckig \
         # Perception
         # ros-jazzy-orbbec-camera \ # have problems with magic enum version conflict, so disable for now
@@ -84,8 +94,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         # Visualization / debugging
         ros-jazzy-foxglove-bridge \
         ros-jazzy-plotjuggler-ros \
+        ros-jazzy-rviz-rendering \
         ros-jazzy-teleop-twist-keyboard \
     && rm -rf /var/lib/apt/lists/*
+
+# OCS2 itself is built from the pinned ocs2_ros2 source in dev.repos into the
+# workspace install/. Do not additionally install a rolling ros-jazzy-ocs2 deb
+# or add temporary log/... underlays to the image environment.
 
 # Full Nav2 metapackage (separate layer — large, changes rarely)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
