@@ -176,6 +176,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Textual requires a different version of pygments than installed by apt
 RUN python3 -m pip install --break-system-packages -I pygments textual
 
+# Debian's packaging has no pip RECORD; upgrading it directly fails during uninstall.
+# Bootstrap only this package as a pip-managed copy, leaving the apt files intact.
+RUN python3 -m pip install --break-system-packages \
+        --ignore-installed --no-deps packaging
+
 # Python3 PIP packages
 # NOTE: kornia is intentionally NOT here — it depends on torch and would pull a duplicate
 #       multi-GB torch from PyPI. It is installed after the official torch cu130 below.
