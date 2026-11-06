@@ -45,6 +45,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         qtbase5-dev \
         # Audio
         espeak \
+        libwebrtc-audio-processing-dev \
         portaudio19-dev \
         # GStreamer
         libgstreamer1.0-dev \
