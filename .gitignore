@@ -1,7 +1,6 @@
 install/
 log/
 /src/*
-!/src/zephyr_perception/
 build/
 data/
 .dockerargs
