@@ -39,7 +39,7 @@ patch, make, gcc, kmod, busybox, libgpiod v1 and prepared kernel headers at
 the path checked by the installer. Source is downloaded from NVIDIA and
 SHA-256 checked; no compiled module or credentials are committed.
 
-The fix has three parts:
+The fix has four parts:
 
 - Apply the older NVIDIA hardware-CS workaround to `spi-tegra114`. The two
   newer software-CS patches did not restore internal loopback on this BSP.
@@ -48,6 +48,28 @@ The fix has three parts:
 - Hold CAN1 standby GPIO low with a persistent systemd service. Configure
   CAN0 at 500 kbps for Ranger Mini V3 and CAN1 at 1 Mbps for the RS arm.
   Other boards retain the existing 1 Mbps configuration on both interfaces.
+- Keep CAN1's SPI controller powered during operation (`power/control=on`),
+  avoiding runtime suspend/resume between the arm's 5 ms command batches.
+  The Robotics-board startup branch resolves the controller through CAN1's
+  sysfs device path and verifies the setting before opening CAN1. On the
+  validated board this controller is `3230000.spi`.
+
+This power setting trades some idle power consumption for more predictable
+CAN delivery. Read-only load tests found runtime resume delays up to 4.355 ms
+under video load; keeping the controller powered removed those resume events.
+It addresses a measured source of latency, but does not guarantee that all
+`EAGAIN` or other CAN failures are eliminated. Queue size, CAN bitrate and the
+kernel driver are unchanged by this power setting.
+
+After stopping robot control, restore runtime power management temporarily with:
+
+```bash
+echo auto | sudo tee /sys/bus/platform/devices/3230000.spi/power/control
+```
+
+This lasts until the device setup service next runs or the board reboots;
+the installed startup script reapplies `on`. Do not restart the device setup
+service during robot operation: it also takes down and reconfigures CAN links.
 
 The installer leaves the vendor module intact and installs an override under
 `/lib/modules/6.8.12-1021-tegra/updates/zephyr/`. It installs the startup files
