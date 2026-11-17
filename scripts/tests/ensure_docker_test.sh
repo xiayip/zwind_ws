@@ -39,13 +39,26 @@ EOF
 
 cat > "${MOCK_BIN}/nvidia-ctk" <<'EOF'
 #!/bin/bash
+if [[ "$*" != 'runtime configure --runtime=docker --set-as-default' ]]; then
+    echo "Unexpected nvidia-ctk invocation: $*" >&2
+    exit 1
+fi
 printf '%s\n' "$*" >> "$MOCK_NVIDIA_CTK_LOG"
 touch "$MOCK_CONFIGURED_FLAG"
 EOF
 
 cat > "${MOCK_BIN}/sudo" <<'EOF'
 #!/bin/bash
-exec "$@"
+printf '%s\n' "$*" >> "$MOCK_SUDO_LOG"
+case "$*" in
+    'nvidia-ctk runtime configure --runtime=docker --set-as-default'|'systemctl restart docker')
+        exec "$@"
+        ;;
+    *)
+        echo "Unexpected sudo invocation: $*" >&2
+        exit 1
+        ;;
+esac
 EOF
 
 cat > "${MOCK_BIN}/systemctl" <<'EOF'
@@ -64,7 +77,7 @@ EOF
 
 cat > "${MOCK_BIN}/uname" <<'EOF'
 #!/bin/bash
-printf 'x86_64\n'
+printf '%s\n' "$MOCK_ARCH"
 EOF
 
 cat > "${MOCK_BIN}/tput" <<'EOF'
@@ -84,6 +97,7 @@ run_case() {
     local format_after="$5"
     local info_after="$6"
     local expected_configures="$7"
+    local arch="${8:-x86_64}"
     local case_dir="${TEST_TMP}/${tests_run}"
     local output=""
     local actual_configures=0
@@ -94,16 +108,19 @@ run_case() {
     if ! output="$(
         export PATH="${MOCK_BIN}:/usr/bin:/bin"
         export ZEPHYR_DOCKER_READY=0
+        export ZEPHYR_DOCKER_USE_SUDO=0
         export ZEPHYR_DOCKER_REQUIRE_NVIDIA=1
+        export MOCK_ARCH="$arch"
         export MOCK_CONFIGURED_FLAG="${case_dir}/configured"
         export MOCK_NVIDIA_CTK_LOG="${case_dir}/nvidia-ctk.log"
+        export MOCK_SUDO_LOG="${case_dir}/sudo.log"
         export MOCK_DOCKER_FORMAT_BEFORE="$format_before"
         export MOCK_DOCKER_FORMAT_STATUS="$format_status"
         export MOCK_DOCKER_INFO_BEFORE="$info_before"
         export MOCK_DOCKER_FORMAT_AFTER="$format_after"
         export MOCK_DOCKER_INFO_AFTER="$info_after"
-        bash "$ENSURE_DOCKER"
-    2>&1)"; then
+        bash "$ENSURE_DOCKER" 2>&1
+    )"; then
         printf 'not ok - %s\n%s\n' "$name" "$output"
         return 1
     fi
@@ -115,6 +132,12 @@ run_case() {
     if [[ "$actual_configures" -ne "$expected_configures" ]]; then
         printf 'not ok - %s (expected %s configure call(s), got %s)\n' \
             "$name" "$expected_configures" "$actual_configures"
+        return 1
+    fi
+
+    if [[ "$expected_configures" -eq 0 && -s "${case_dir}/sudo.log" ]]; then
+        printf 'not ok - %s (configured host should not require sudo)\n' "$name"
+        cat "${case_dir}/sudo.log"
         return 1
     fi
 
@@ -165,5 +188,25 @@ run_case \
     'nvidia\nnvidia-container-runtime\nrunc\n' \
     'Runtimes: nvidia nvidia-container-runtime runc\n' \
     1
+
+run_case \
+    "configured Jetson starts without static CDI or sudo" \
+    'runc\nnvidia\n' \
+    0 \
+    'Runtimes: runc nvidia\n' \
+    'runc\nnvidia\n' \
+    'Runtimes: runc nvidia\n' \
+    0 \
+    aarch64
+
+run_case \
+    "Jetson still configures a missing NVIDIA runtime" \
+    'runc\n' \
+    0 \
+    'Runtimes: runc\n' \
+    'runc\nnvidia\n' \
+    'Runtimes: runc nvidia\n' \
+    1 \
+    aarch64
 
 printf '%s tests passed\n' "$tests_run"

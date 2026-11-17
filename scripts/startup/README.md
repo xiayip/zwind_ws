@@ -40,6 +40,62 @@ are safe. Boot firmware and text-console orientation are outside this setup.
 This uses GNOME's [saved monitor configuration](https://gitlab.gnome.org/GNOME/mutter/-/blob/gnome-46/doc/monitor-configuration.md)
 and [GDM monitor layout](https://discourse.gnome.org/t/how-do-you-configure-your-displays-for-gdm/13762).
 
+## HMI browser and desktop autostart
+
+Step 5 of `setup_ws.sh` installs a working Chromium/Chrome browser on the host
+and configures the desktop user's existing HMI fullscreen launcher. Run only
+this step as `nvidia` on the Jetson host (not as `admin` inside Docker):
+
+```bash
+bash /home/nvidia/zephyr_ws/scripts/startup/setup_hmi_kiosk.sh
+```
+
+Run without `sudo`; the script requests it only when installing dependencies.
+If no usable browser exists, it installs Canonical's [Chromium Snap](https://snapcraft.io/chromium).
+It installs the HMI login autostart entry and starts the launcher in the current
+desktop session when available, including from SSH using that user's desktop
+environment. The launcher waits for `http://127.0.0.1:8765/healthz`, then opens
+fullscreen on the unique 1600x600 display. Logs go to
+`~/.local/state/zephyr-courier-kiosk/launcher.log`.
+On X11, it also requests fullscreen after the browser window appears, matching
+only the launched browser PID. This handles Jetson/GNOME sessions that retain
+desktop bars despite Chromium's kiosk flags. Required X11/GDK host packages
+are installed by this setup step.
+
+On GNOME 46 the step also installs the user extension
+`zephyr-kiosk-lock@zephyr.local`. Reload GNOME Shell or log in again after its
+first installation/code update. While the dedicated HMI browser runs, it
+disables desktop edge/workspace gestures and window/browser exit shortcuts,
+and keeps HMI fullscreen. The **密码退出** button in the top-left device-information dialog opens a touch
+keypad and verifies the HMI service's maintenance password before closing
+the browser. The packaged `zephyr_hmi/defaults.json` currently sets it to `200440`;
+`KIOSK_MAINTENANCE_PIN` can override it, or disable password access with an empty value.
+Wrong/disabled passwords and an offline HMI service
+do not unlock the screen. The extension restores desktop input on exit.
+See [HMI deployment](../../src/zephyr_interaction/zephyr_hmi/docs/DEPLOYMENT.md)
+for password setup and administrative recovery over SSH.
+
+`z2_launch_all.launch.py` starts HMI and diagnostics inside Docker by default;
+`ros2 launch zephyr_hmi hmi.launch.py mode:=demo` can also start HMI independently.
+The host browser is a separate process; it needs no container
+rebuild. Desktop login autostart waits for the service, but does not configure
+automatic OS login or start ROS/Docker. After manually closing the browser,
+rerun the setup helper or HMI's `scripts/run-kiosk.sh` to reopen it.
+
+## Screen blanking: Never
+
+Step 6 of `setup_ws.sh` saves GNOME's **Settings > Power > Screen Blank = Never**
+for the desktop user (`org.gnome.desktop.session idle-delay = uint32 0`).
+To apply only this setting as `nvidia` on the host, without sudo:
+
+```bash
+bash /home/nvidia/zephyr_ws/scripts/startup/setup_screen_blanking.sh
+```
+
+The setting applies to the active desktop immediately and persists across
+logins/reboots. The helper also supports installation before a desktop login
+by writing the user's settings through a temporary D-Bus session.
+
 ## J401 GMSL (optional, host only)
 
 For the validated J401 / JetPack 7.2 GMSL BSP:

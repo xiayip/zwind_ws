@@ -13,7 +13,7 @@ else
     C_BLUE=''; C_GREEN=''; C_YELLOW=''; C_RED=''; C_RESET=''
 fi
 
-STEP_TOTAL=5
+STEP_TOTAL=7
 STEP_CURRENT=0
 CURRENT_STEP_NAME=""
 
@@ -79,7 +79,23 @@ sudo bash "$SCRIPT_DIR/scripts/startup/setup_waveshare_display.sh" "${SUDO_USER:
 ok "Waveshare landscape and touch defaults configured for desktop and login screen"
 
 # ---------------------------------------------------------------------------
-# Step 5: Set up Tailscale
+# Step 5: Install the host HMI browser and desktop autostart
+# ---------------------------------------------------------------------------
+step "Setting up HMI browser and desktop autostart"
+
+bash "$SCRIPT_DIR/scripts/startup/setup_hmi_kiosk.sh"
+ok "HMI browser and desktop autostart configured"
+
+# ---------------------------------------------------------------------------
+# Step 6: Set screen blanking to Never
+# ---------------------------------------------------------------------------
+step "Setting screen blanking to Never"
+
+bash "$SCRIPT_DIR/scripts/startup/setup_screen_blanking.sh"
+ok "Screen blanking set to Never"
+
+# ---------------------------------------------------------------------------
+# Step 7: Set up Tailscale
 # ---------------------------------------------------------------------------
 step "Setting up Tailscale"
 
