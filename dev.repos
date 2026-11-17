@@ -113,3 +113,9 @@ repositories:
         type: git
         url: git@jihulab.com:robot_group/zephyr_z2.git
         version: main
+
+    # zephyr interaction
+    src/zephyr_hmi:
+        type: git
+        url: git@jihulab.com:robot_group/zephyr_interaction/zephyr_hmi.git
+        version: main
