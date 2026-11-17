@@ -8,6 +8,38 @@ The script installs the Zephyr-managed Gemini 305 udev rule and reloads udev.
 Reconnect an already attached camera if its USB-device permissions do not
 update immediately.
 
+## Waveshare 8.9-inch display and touch (Jetson desktop)
+
+Step 4 of `setup_ws.sh` configures the validated Ubuntu 24.04 / GNOME 46
+desktop and GDM login screen for the Waveshare 8.9-inch 600x1600 LCD.
+To run only this step from the workspace root:
+
+```bash
+sudo bash scripts/startup/setup_waveshare_display.sh nvidia
+```
+
+The saved layout uses `DP-0`, native 600x1600 at 59.991 Hz, rotated `right`
+to display in 1600x600 landscape. Although connected via HDMI, this Jetson
+reports the connector as `DP-0`. The profile matches EDID
+`HLT / WaveShsare089 / 0x00000001`; the product spelling is intentional.
+Different connectors or panel EDIDs need a corresponding profile update in
+`waveshare-monitors.xml` and, for a different EDID, the helper's `TOUCH_OUTPUT`.
+
+The installer merges this single-screen profile into the desktop user's and
+GDM's `~/.config/monitors.xml`, preserving unrelated monitor arrangements.
+Changed existing files are backed up once as `monitors.xml.before-waveshare`.
+It also binds USB touchscreen `0712:000a` to that monitor in each account's
+GNOME settings, so touch follows display rotation without a fixed `xinput`
+device ID or a second calibration matrix.
+
+The step can run without a connected screen or graphical session. An active
+desktop receives the touch mapping immediately; the saved display layout
+applies on the next login/boot. It does not restart GDM or reboot. Repeat runs
+are safe. Boot firmware and text-console orientation are outside this setup.
+
+This uses GNOME's [saved monitor configuration](https://gitlab.gnome.org/GNOME/mutter/-/blob/gnome-46/doc/monitor-configuration.md)
+and [GDM monitor layout](https://discourse.gnome.org/t/how-do-you-configure-your-displays-for-gdm/13762).
+
 ## J401 GMSL (optional, host only)
 
 For the validated J401 / JetPack 7.2 GMSL BSP:

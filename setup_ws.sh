@@ -13,7 +13,7 @@ else
     C_BLUE=''; C_GREEN=''; C_YELLOW=''; C_RED=''; C_RESET=''
 fi
 
-STEP_TOTAL=4
+STEP_TOTAL=5
 STEP_CURRENT=0
 CURRENT_STEP_NAME=""
 
@@ -71,7 +71,15 @@ sudo "$SCRIPT_DIR/scripts/startup/setup_device_all.sh"
 ok "Device configuration complete"
 
 # ---------------------------------------------------------------------------
-# Step 4: Set up Tailscale
+# Step 4: Set up Waveshare landscape display and touch mapping
+# ---------------------------------------------------------------------------
+step "Setting up Waveshare landscape display and touch mapping"
+
+sudo bash "$SCRIPT_DIR/scripts/startup/setup_waveshare_display.sh" "${SUDO_USER:-$(id -un)}"
+ok "Waveshare landscape and touch defaults configured for desktop and login screen"
+
+# ---------------------------------------------------------------------------
+# Step 5: Set up Tailscale
 # ---------------------------------------------------------------------------
 step "Setting up Tailscale"
 
