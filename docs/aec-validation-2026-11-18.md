@@ -136,3 +136,20 @@ ros2 launch audio_aec respeaker.launch.py
 基线提交：`13f0a5780a73c2da0e068ab3db40aaf5027b1c14`（`feat(audio): add validated ReSpeaker Lite AEC baseline`）。
 工作区通过独立仓库管理源码，此处记录精确代码版本；测试录音和构建产物保留在本机
 被忽略的 `artifacts/` 目录，不纳入 Git。
+
+
+## LiveKit voice baseline frozen after HMI integration
+
+2026-11-18: HMI/voice runtime baseline `63996fe`; native audio/device selection
+baseline `2e0cbfa`. Both repositories carry tag `voice-baseline-20261118`.
+The current kiosk uses 80% PCM output volume and turn-taking upload suppression
+with a 650 ms tail; complete speech, once-only confirmation, entry/correction
+have human acceptance. Building aliases and sound-driven aura have automated
+and synthetic-model validation; latest human acceptance is still pending.
+
+Server archive: `/opt/zephyr-voice-agent-baseline-20261118.tar.gz`, SHA256
+`717fd1551ed1787d284ce5a1873ac5170666a14fd4ccf73b45dfdc471f69c608`.
+Secrets remain in the protected environment file, excluded from Git and archive.
+Quiet unattended AEC experiments are authorized after this baseline. Experiments
+must disable only diagnostic upload gating and must not replace the accepted
+kiosk mode without evidence for both echo rejection and near-end speech.
