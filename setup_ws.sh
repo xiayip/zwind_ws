@@ -13,7 +13,7 @@ else
     C_BLUE=''; C_GREEN=''; C_YELLOW=''; C_RED=''; C_RESET=''
 fi
 
-STEP_TOTAL=7
+STEP_TOTAL=8
 STEP_CURRENT=0
 CURRENT_STEP_NAME=""
 
@@ -95,7 +95,15 @@ bash "$SCRIPT_DIR/scripts/startup/setup_screen_blanking.sh"
 ok "Screen blanking set to Never"
 
 # ---------------------------------------------------------------------------
-# Step 7: Set up Tailscale
+# Step 7: Enable desktop automatic login
+# ---------------------------------------------------------------------------
+step "Enabling desktop automatic login"
+
+sudo python3 "$SCRIPT_DIR/scripts/startup/setup_desktop_autologin.py" "${SUDO_USER:-$(id -un)}"
+ok "Desktop automatic login configured for the next boot"
+
+# ---------------------------------------------------------------------------
+# Step 8: Set up Tailscale
 # ---------------------------------------------------------------------------
 step "Setting up Tailscale"
 

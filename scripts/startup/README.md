@@ -88,8 +88,9 @@ for password setup and administrative recovery over SSH.
 `z2_launch_all.launch.py` starts HMI and diagnostics inside Docker by default;
 `ros2 launch zephyr_hmi hmi.launch.py mode:=demo` can also start HMI independently.
 The host browser is a separate process; it needs no container
-rebuild. Desktop login autostart waits for the service, but does not configure
-automatic OS login or start ROS/Docker. After manually closing the browser,
+rebuild. Desktop login autostart waits for the service; step 7 configures automatic
+OS login separately. ROS/Docker startup still needs to be configured separately.
+After manually closing the browser,
 rerun the setup helper or HMI's `scripts/run-kiosk.sh` to reopen it.
 
 ## Screen blanking: Never
@@ -105,6 +106,22 @@ bash /home/nvidia/zephyr_ws/scripts/startup/setup_screen_blanking.sh
 The setting applies to the active desktop immediately and persists across
 logins/reboots. The helper also supports installation before a desktop login
 by writing the user's settings through a temporary D-Bus session.
+
+## Desktop automatic login
+
+Step 7 of `setup_ws.sh` enables GDM automatic login for the user running setup
+(normally `nvidia`). To run only this step:
+
+```bash
+sudo python3 scripts/startup/setup_desktop_autologin.py nvidia
+```
+
+The helper sets `AutomaticLoginEnable=true` and `AutomaticLogin=<desktop-user>`
+in `/etc/gdm3/custom.conf`, preserving other settings, comments and permissions.
+Before the first change it saves `custom.conf.before-zephyr-autologin` beside
+the original. Repeat runs are safe. It takes effect on the next boot and does
+not restart GDM or the current session. System passwords and HMI's password
+exit remain configured; only the desktop login prompt is skipped at boot.
 
 ## J401 GMSL (optional, host only)
 
