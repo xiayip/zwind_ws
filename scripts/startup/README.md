@@ -123,6 +123,32 @@ the original. Repeat runs are safe. It takes effect on the next boot and does
 not restart GDM or the current session. System passwords and HMI's password
 exit remain configured; only the desktop login prompt is skipped at boot.
 
+## Desktop notification banners
+
+Step 8 of `setup_ws.sh` enables GNOME's **Do Not Disturb** for the desktop user
+and disables low-disk-space notifications. To apply only this step on the host,
+without sudo:
+
+```bash
+bash /home/nvidia/zephyr_ws/scripts/startup/setup_desktop_notifications.sh
+```
+
+The settings apply immediately and persist across logins/reboots. Ordinary
+notifications remain in the notification center. GNOME can show critical
+notifications even in Do Not Disturb, so the helper also sets housekeeping's
+`free-percent-notify` to `0.0` and disables the `org-gnome-baobab` notification
+source used by disk-space warnings. Other critical system notifications may
+still appear. HMI's own fault display is independent of these desktop settings.
+Disk usage is still available through `df -h` or Disk Usage Analyzer.
+
+To restore the GNOME defaults:
+
+```bash
+gsettings reset org.gnome.desktop.notifications show-banners
+gsettings reset org.gnome.settings-daemon.plugins.housekeeping free-percent-notify
+gsettings reset org.gnome.desktop.notifications.application:/org/gnome/desktop/notifications/application/org-gnome-baobab/ enable
+```
+
 ## J401 GMSL (optional, host only)
 
 For the validated J401 / JetPack 7.2 GMSL BSP:

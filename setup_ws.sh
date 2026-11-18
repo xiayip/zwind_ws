@@ -13,7 +13,7 @@ else
     C_BLUE=''; C_GREEN=''; C_YELLOW=''; C_RED=''; C_RESET=''
 fi
 
-STEP_TOTAL=8
+STEP_TOTAL=9
 STEP_CURRENT=0
 CURRENT_STEP_NAME=""
 
@@ -103,7 +103,15 @@ sudo python3 "$SCRIPT_DIR/scripts/startup/setup_desktop_autologin.py" "${SUDO_US
 ok "Desktop automatic login configured for the next boot"
 
 # ---------------------------------------------------------------------------
-# Step 8: Set up Tailscale
+# Step 8: Disable desktop notification banners and low-disk-space alerts
+# ---------------------------------------------------------------------------
+step "Disabling desktop notification banners and low-disk-space alerts"
+
+bash "$SCRIPT_DIR/scripts/startup/setup_desktop_notifications.sh"
+ok "Desktop notification settings saved"
+
+# ---------------------------------------------------------------------------
+# Step 9: Set up Tailscale
 # ---------------------------------------------------------------------------
 step "Setting up Tailscale"
 
