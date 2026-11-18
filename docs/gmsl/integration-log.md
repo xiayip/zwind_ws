@@ -241,3 +241,179 @@
 - Latest bounded primary-source static run: 180 frames, mean 20.35 ms and p95
   28.75 ms for rendering only. Central board is continuous, but the peripheral
   water-stack region still has a discontinuity. No all-depth solution is claimed.
+
+## 2026-11-17 — 前后环视按需输出 service
+
+- 在 `zephyr_surround_vision` C++ 组件增加 `~/set_enabled`，类型
+  `std_srvs/srv/SetBool`。标准节点路径为 `/surround/front/set_enabled` 和
+  `/surround/back/set_enabled`。`data: true` 开启，`false` 关闭；前后独立、幂等。
+- 默认 `enabled_on_start=false`。关闭时没有该拼接节点的原始图像订阅，清空配对
+  缓存，跳过拼接、发布及由发布触发的编码。原始相机驱动继续运行，其他消费者
+  不受控制；相机 YUYV→RGB 转换仍消耗 CPU。重开只处理新订阅收到的新配对。
+- service 和渲染 timer 使用同一互斥回调组，关闭应答在最后一次发布完成后返回。
+  输入回调使用互斥锁和订阅代数，丢弃旧订阅排队的回调。网络中的在途帧仍可能到达。
+- status 保留约 1 Hz，新增 `enabled`；关闭为 `state=disabled`、`fps=0`、
+  `render_ms=0`，累计 published 不再增长。topic 订阅不会自动打开流。
+- panorama launch 增加 `enabled_on_start`；z2 launch-all/surround launch 增加并透传
+  `surround_enabled_on_start` 与 `surround_back_enabled_on_start`，均默认 false。
+  `enable_surround`/`enable_surround_back` 仍控制节点是否存在，不能替代运行时开关。
+  预览仍默认关闭。LiveKit/Quest/HMI 的自动服务调用桥接不在本次变更中。
+- 包清单/CMake 声明 std_srvs 依赖，现有 Docker 已提供，无 apt/pip 安装，无内核、
+  驱动、Docker 镜像或启动配置改动。源码和 README 已更新到原工作区。
+- 新增两项实际 ROS 节点/service 集成测试：默认关闭与零输入订阅、独立开关、
+  幂等、恢复等待新帧、连续切换、启动显式 opt-in。与原有 11 项 renderer/pairing
+  测试合计 13 项通过。测试使用进程级 ROS_DOMAIN_ID=95，未改全局 ROS 环境。
+- 在独立 `log/surround_vision/flow-control-20261117/{build,install}` 编译验证，
+  然后原子替换主安装引用的组件库，未原地覆盖运行进程映射的库 inode。
+  原源码及库在该目录 `backup/`；参数快照 before-components.json；部署摘要 deployed.json。
+- 部署异常及恢复：尝试通过组件管理服务卸载旧前视 panorama 时请求超时，原前视
+  容器 PID 251527 随后以 -11 退出，launch 日志确认段错误。没有继续对后视做在线
+  卸载。前视先恢复两路原始相机，再加载新 panorama；旧后视容器通过 SIGINT 正常
+  停止后，仅重新启动后视相机/拼接容器。整机 launch-all PID 251446、底盘、机械臂
+  和 RTC 未由本任务重启。旧版本在线卸载崩溃原因未进一步定位，不应声称已修复；
+  新流控不需要卸载节点。
+- 本次维护替换的环视 launch 由 supervise_recovery.py 绑定到原 launch-all 生命周期，
+  原 launch-all 退出时自动关闭替换进程，避免残留占用相机。该辅助程序仅用于本次
+  不中断整机的维护；之后直接使用原 z2_launch_all 即可，无需用户额外起脚本。
+- 实机验证包含全关、仅前视、仅后视、全开、再次全关，均通过；关闭路接收 0 帧，
+  计数稳定，开启路恢复 JPEG 输出，无输入/渲染错误。最终前后均保持 disabled。
+  实机证据为 live-verification.json；当次测试容器 PID 为前视 290460、后视 300248。
+- 8 秒窗口容器 CPU（一个 CPU 核=100%，含驱动与测试 JPEG 编码）：
+  全开前视169.5%、后视163.1%，合计332.6%；全关前视131.5%、后视130.5%，合计261.9%。
+  本次采样减少约70.7个百分点（约0.71个核），并非 CPU 归零。
+  全开时测试订阅实际约5.6/6.7 JPEG fps；系统仍有较高负载，本次没有达到或声称
+  20 Hz/端到端时延优化。更大的闲时 CPU 节省需要另行处理原始采集/颜色转换开销。
+- 后续板子部署：同步本包以及 z2_bringup 的两个 launch 和 README，在停止使用这些库
+  的相机容器后，于原 Docker 工作区执行 `colcon build --packages-select zephyr_surround_vision`。
+  现有 symlink-install 的 z2 launch 源码即刻可用；普通复制安装还需重建 z2_bringup。
+  正常启动仍是 `ros2 launch z2_bringup z2_launch_all.launch.py`，客户端按需调用上述 service。
+- 工作区现有 `.gitignore` 的 `/src/*` 忽略了非独立 Git 仓库的 perception 源码；本次
+  保留其原有仓库布局，未修改忽略规则、未提交 Git。复制到其他板子时务必包含这些源码，
+  不能仅依赖工作区根仓库的 git diff。z2 子仓库其他并行工作的修改未覆盖。
+
+- 随后观察到外部重新启动整机 launch-all（新 PID 303974）；维护替换进程随旧 launch-all
+  退出自动关闭，前后均记录 clean exit。新原生环视容器 PID 304126/304129 无需辅助脚本，
+  两个 set_enabled service 均可发现，实际 status 均为 enabled=false、disabled、published=0、
+  fps=0。证据为 restart-verification.json。这验证了正常单 launch 默认关闭行为。
+
+## 2026-11-17 — 补齐 GMSL 驱动源头流控
+
+前次实现仅停止 panorama 输入订阅和拼接，四路驱动仍连续采集/转色。本次按用户纠正，
+在原 `/home/nvidia/zephyr_ws/src/zephyr_common/zephyr_gmsl_camera` 增加 C++ 源头开关。
+
+实现与文件：
+
+- `src/gmsl_camera_node.cpp`：每个驱动的 `~/set_enabled`（std_srvs/SetBool）；
+  `enabled_on_start`（默认 true）、`capture_on_demand`（默认 false）只读启动参数。
+  CaptureDevice 初始化仅申请/MMAP 缓冲区；start 重新 QBUF/STREAMON，stop 检查 STREAMOFF。
+  STREAMOFF 清空内核队列，重新开启不会使用旧帧。设备 FD/MMAP/独占锁保留。
+- 实际采集条件为 `enabled && (!capture_on_demand || publisher.getNumSubscribers()>0)`。
+  CameraPublisher 需求包括 Image（含 image_transport）和 CameraInfo。闲置时 CV 等待并每100ms
+  检查需求；不 poll、不转换、不发布。服务与采集线程通过 mutex 串行访问 V4L2；关闭响应
+  等待在途操作及 STREAMOFF 完成。故障锁存，停软件采集，避免忙重试/关闭其他节点。
+- 驱动服务路径为 `/cameras/<front_left|front_right|back_left|back_right>/gmsl_camera/set_enabled`。
+  false 优先于任何订阅需求，true 恢复许可；按需模式仍需消费者才能启动。
+- `CMakeLists.txt`：相机组件补 std_srvs 目标依赖；package.xml 原本已有依赖。
+- `launch/gmsl_camera.launch.py`、`launch/gmsl_surround.launch.py`：暴露两个启动参数，
+  保留独立相机/标定的连续采集兼容行为。
+- `zephyr_surround_vision/launch/panorama.launch.py`：创建相机时传许可 true + 按需 true。
+  保留 `/surround/front|back/set_enabled` 业务入口及默认关闭；解除输入订阅后，若没有
+  其他原图/CameraInfo 消费者，相应驱动自动 STREAMOFF。其他消费者仍在用时继续供图。
+  外部相机（start_cameras=false）需自己启用 capture_on_demand。
+- 两包 README 已更新上述协议、独立开关优先级及硬件恢复延迟。
+
+边界：环视 service 响应保证拼接节点停止发布，不是两路硬件停流同步屏障；驱动 service
+false 成功才表示该相机 STREAMOFF 完成。已发网络帧可能稍后到达。停止 V4L2 不承诺
+传感器断电/整个解串器掉电。硬件 STREAMON/STREAMOFF 实测各约1.8～2秒；应异步调用。
+运行负载高时服务调度也可能延迟，本轮曾有一次环视关闭响应6.2秒，其余约0.1秒。
+
+构建与验证：
+
+- 原容器 `zephyr_dev_24.04-aarch64-container`、admin 用户，主工作空间 colcon build
+  --packages-select zephyr_gmsl_camera --symlink-install --parallel-workers 1
+  --cmake-args -DCMAKE_BUILD_TYPE=Release 成功（34秒）；没有安装依赖或改 Docker 配置/镜像。
+- 在独立 ROS_DOMAIN_ID=87 启动临时前后环视测试，验证默认关闭、前开后关、全开、
+  驱动强制关闭优先、单相机反复启停、后开前关、全关、外部 raw 消费者保留采集并退出停流、
+  三轮双组启停；27次服务调用全部成功。所有阶段无采集/渲染报错，关闭时图像计数不增长。
+- 5秒 CPU 采样，100%=1核，两容器合计：初始全关3.0%，全开547.2%（包含JPEG压缩），
+  流过图后全关3.2%，多轮切换后全关3.2%。这是本次同一测试进程的负载，非整机CPU。
+  活跃输出受其他负载影响，测试期间约9～20Hz，不承诺本改动提升开启时的拼接帧率。
+- 另测独立驱动 enabled_on_start=false / capture_on_demand=false：有订阅也保持启动关闭；
+  true 恢复出图；重复 true 幂等（约0.066秒）；false 后停止出图；无订阅时连续模式仍能开启。
+  5次服务调用成功，单相机容器正常退出。launch语法检查、补丁反向应用检查均通过。
+- 首轮多相机测试收尾曾向整个进程组发 SIGINT，后视进程退出码 -2（信号中断），功能断言
+  在收尾前已全部通过；测试工具已改为仅通知 launch 由它停止子进程，后续单相机正常退出。
+  无崩溃退出 -11，无残留测试相机进程。任务开始时没有正在运行的环视容器，结束后也未额外常驻。
+
+部署/复用：源码直接位于原 zephyr_ws，库已编入原 install，launch 为 symlink-install，
+下次原来的 launch-all 直接加载新行为，不需要任何额外启动脚本。
+其他同版本板子可应用下述补丁后，在既有 Docker 中正常 colcon build 相机/环视包。
+未修改内核、BSP、设备树、系统服务、相机标定或 LiveKit 协议，未创建 Git 提交。
+
+备份、补丁、构建及测试日志：`log/surround_vision/source-flow-control-20261117/`。
+`backup/` 保留原相机包、原 panorama.launch.py 和旧相机动态库；
+`source-flow-control.patch` 为本轮7个源码/文档文件的完整补丁；
+`verification.json`、`manual-verification.json` 和对应硬件测试日志为实机证据。
+本地同步副本：`zephyr_ws_integration/`，本地证据：`artifacts/source-flow-control-20261117/`。
+V4L2队列启停语义核对官方文档：https://docs.kernel.org/userspace-api/media/v4l/vidioc-streamon.html
+
+## 2026-11-17 — 移除拼接层流控，源头热待机降低首帧延迟
+
+用户要求：zephyr_surround_vision 只按输入图像配对/拼接，移除下游开关；解释并减少开流延迟。
+本节覆盖前两节中“环视服务控制订阅”和“默认关闭即STREAMOFF”的当前行为，历史记录保留。
+
+代码变更（原 zephyr_ws / 原开发 Docker，无额外常驻脚本）：
+
+- `zephyr_surround_vision/src/panorama_node.cpp`：删除 SetBool service、enabled_on_start 参数、
+  enabled/status字段、动态订阅代次及禁用分支；两路订阅常驻。用 condition_variable 唤醒的
+  单一渲染线程替代周期渲染定时器；输入回调仅校验/入队/通知，渲染在锁外，保留 rate_hz 上限，
+  停顿后的首个匹配对立即处理。无新输入时只约1Hz状态更新，无重复图像输出。
+  时间戳差25ms、接收年龄250ms、乱序/重复检测、有界最新匹配队列和回退处理不变。
+  析构唤醒并join，ROS shutdown不再发布。状态缺输入报告stale_or_missing_input，移除enabled字段。
+- 删除拼接包 std_srvs 依赖；旧 test_flow_control.cpp 删除并由 test_input_driven.cpp 替换。
+  新用例覆盖常驻订阅/无service、单路不输出、错位时间戳拒绝、过期拒绝、无重复输出、
+  错误frame_id拒绝、恢复即配对、关闭空闲线程；保留11项渲染/配对回归测试。
+- `zephyr_gmsl_camera/src/gmsl_camera_node.cpp`：增加 idle_mode=stop|warm（独立驱动默认stop）。
+  warm启动时STREAMON，禁用输出只DQBUF/QBUF归还MMAP帧，无RGB分配/转色/发布，保持硬件热。
+  开启前有界丢弃ready旧帧，响应后处理新帧；不反复调用STREAMON/OFF。
+  stop保留原彻底停流行为。service仍为 /cameras/<name>/gmsl_camera/set_enabled。
+  新增控制请求优先标志，避免采集循环反复占锁延迟服务。启停路径增加耗时日志。
+  故障时仍停止硬件并锁存，不因warm策略无限重试。
+- `panorama.launch.py`：源头 enabled_on_start=false、capture_on_demand=false、idle_mode=warm。
+  输入订阅不会绕过源头许可。参数为 camera_enabled_on_start=false / camera_idle_mode=warm。
+- `z2_bringup/launch/surround.launch.py` / `z2_launch_all.launch.py`：改用
+  surround_cameras_enabled_on_start=false、surround_back_cameras_enabled_on_start=false、
+  surround_camera_idle_mode=warm。原 enable_surround / enable_surround_back 仍控制是否创建节点。
+  preview继续关闭。两个独立相机launch也暴露idle_mode，保留默认stop和既有启动行为。
+- 三包README更新当前API、迁移说明、热待机功耗边界、实测值。未改变其他z2修改。
+
+调用契约：没有 /surround/front|back/set_enabled。前视需开启front_left/front_right源头service，
+后视需开启back_left/back_right；建议上层并行调用一对服务。false仅保证源头完成切换，
+下游可能完成已经接收的在途处理；拼接凭新鲜度/配对自然停止。warm意味着相机/链路/DMA仍耗电。
+仍需新帧、配对、渲染、编码和传输；不能保证零延迟。初次launch和故障恢复仍有硬件开流时间。
+未改变LiveKit/Quest桥接或编码器生命周期，不能把机器人JPEG首帧测量视为头显端到端延迟。
+
+延迟定位及实机验证：
+
+- 原Docker内使用现成strace/v4l2-ctl，绕过ROS捕获3帧至/dev/null。
+  VIDIOC_STREAMON=1.797270s；VIDIOC_STREAMOFF=1.819122s；重复STREAMOFF仅0.000032s。
+  源码计时也显示硬件启停约1790～1820ms。证据定位到本机BSP/V4L2调用内部，未修改或
+  继续拆解内核等待；不推断特斯拉的内部实现。
+- 原Docker构建两包成功；最终增量构建核对完成。新2项输入驱动测试+既有11项渲染测试通过。
+  colcon汇总含CTest项共15项，实际gtest用例13项，无失败。
+- 独立ROS_DOMAIN_ID=87实机测试：四路默认输出关闭，即使存在常驻拼接/外部原图订阅也无输出；
+  前开后关、全开、后开前关、全关、四轮双组开关均通过；未检测到旧首帧回放。
+  warm每台相机仅初始化STREAMON一次，反复开关无STREAMON/OFF，全部测试容器正常退出。
+- enable一对源头并行发送 → 机器人端接收首张1024x512拼接JPEG（含配对/渲染/JPEG/DDS）：
+  warm共10次，99.60～142.18ms，中位124.40ms；开启service响应9.66～31.13ms。
+  stop共2次，1921.23～1966.26ms，中位1943.745ms；service响应1803.96～1829.84ms。
+- 3秒CPU采样（100%=1核）：四路warm输出关闭，两个环视容器合计约0.33～1.0%；
+  全开约421.64%，输出约20Hz。非整机指标、非功耗指标，也非所有负载下的保证值。
+- z2 launch-all --show-args确认新参数默认值；所有launch语法检查和z2 git diff --check通过。
+
+部署与记录：任务开始没有运行中的环视容器；在原install构建，无需重启整机/容器，下一次原
+launch-all直接生效。测试进程已清理，未额外常驻。未安装软件/改Docker镜像、权限、系统配置、
+内核、设备树或标定。没有Git提交。
+证据/备份：log/surround_vision/warm-flow-20261117/（backup保留本轮前源码和两动态库）；
+verification.json、live-output.log、v4l2-ioctl.trace、unit-tests.log、launch-args.log。
+源码补丁：warm-flow.patch；本地同步：zephyr_ws_integration/；本地证据：artifacts/warm-flow-20261117/。
