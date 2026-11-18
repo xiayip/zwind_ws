@@ -101,5 +101,5 @@ PY
   echo "[display] Touch mapping saved for $account: $actual"
 done
 
-echo "[display] Defaults saved: 1600x600 landscape (right rotation), with matching touch."
+echo "[display] Defaults saved: 1600x600 landscape (left rotation), with matching touch."
 echo "[display] Display defaults take effect at the next login/boot; no session was restarted."

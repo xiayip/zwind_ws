@@ -25,6 +25,9 @@ fi
 if ! /usr/bin/python3 -c "import gi; gi.require_version('Soup', '3.0'); from gi.repository import Soup" 2>/dev/null; then
   packages+=(gir1.2-soup-3.0)
 fi
+if [[ -f "$HMI_SCRIPTS/host-network-status.py" ]] && ! /usr/bin/python3 -c 'import dbus' 2>/dev/null; then
+  packages+=(python3-dbus)
+fi
 if ((${#packages[@]})); then
   sudo apt-get update
   sudo apt-get install -y --no-install-recommends "${packages[@]}"
@@ -63,6 +66,11 @@ fi
 
 /usr/bin/python3 "$HMI_SCRIPTS/configure-kiosk-lock.py"
 /usr/bin/python3 "$HMI_SCRIPTS/configure-kiosk-autostart.py" --output auto
+if [[ -f "$HMI_SCRIPTS/host-network-status.py" ]]; then
+  /usr/bin/python3 "$HMI_SCRIPTS/host-network-status.py" --install
+else
+  echo "[hmi] Network sampler is unavailable; update zephyr_hmi and rerun this step to enable Wi-Fi/5G readings."
+fi
 
 if [[ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
   echo "[hmi] No desktop session is active. The browser will wait for HMI at the next desktop login."

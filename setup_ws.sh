@@ -71,9 +71,9 @@ sudo "$SCRIPT_DIR/scripts/startup/setup_device_all.sh"
 ok "Device configuration complete"
 
 # ---------------------------------------------------------------------------
-# Step 4: Set up Waveshare landscape display and touch mapping
+# Step 4: Set up Waveshare left-rotated landscape display and touch mapping
 # ---------------------------------------------------------------------------
-step "Setting up Waveshare landscape display and touch mapping"
+step "Setting up Waveshare landscape display (left rotation) and touch mapping"
 
 sudo bash "$SCRIPT_DIR/scripts/startup/setup_waveshare_display.sh" "${SUDO_USER:-$(id -un)}"
 ok "Waveshare landscape and touch defaults configured for desktop and login screen"

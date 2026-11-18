@@ -175,6 +175,10 @@ DOCKER_ARGS+=("-e HOST_USER_UID=$(id -u)")
 DOCKER_ARGS+=("-e HOST_USER_GID=$(id -g)")
 DOCKER_ARGS+=("-e ZEPHYR_DATA_GID=$ZEPHYR_DATA_GID")
 
+# The host sampler shares only signal/state readings, not access to its D-Bus.
+HMI_NETWORK_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/zephyr-hmi"
+mkdir -p "$HMI_NETWORK_DIR"
+
 # IDE/agent history, configuration, and other local state (see *_STATE_DIR).
 for STATE_MOUNT in "${AGENT_STATE_MOUNTS[@]}"; do
     DOCKER_ARGS+=("-v $STATE_MOUNT")
@@ -242,6 +246,7 @@ docker run -it --rm \
     --network host \
     --ipc=host \
     ${DOCKER_ARGS[@]} \
+    -v "$HMI_NETWORK_DIR:/run/zephyr-network:ro" \
     -v /dev:/dev \
     -v "$ZEPHYR_DEV_DIR":"$ZEPHYR_CONTAINER_WS_DIR" \
     -v /etc/localtime:/etc/localtime:ro \

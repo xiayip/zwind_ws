@@ -18,9 +18,10 @@ To run only this step from the workspace root:
 sudo bash scripts/startup/setup_waveshare_display.sh nvidia
 ```
 
-The saved layout uses `DP-0`, native 600x1600 at 59.991 Hz, rotated `right`
-to display in 1600x600 landscape. Although connected via HDMI, this Jetson
-reports the connector as `DP-0`. The profile matches EDID
+The saved layout uses `DP-0`, native 600x1600 at 59.991 Hz, rotated `left`
+to display in 1600x600 landscape (180° from the previous `right` orientation).
+Although connected via HDMI, this Jetson reports the connector as `DP-0`.
+The profile matches EDID
 `HLT / WaveShsare089 / 0x00000001`; the product spelling is intentional.
 Different connectors or panel EDIDs need a corresponding profile update in
 `waveshare-monitors.xml` and, for a different EDID, the helper's `TOUCH_OUTPUT`.
@@ -61,6 +62,15 @@ On X11, it also requests fullscreen after the browser window appears, matching
 only the launched browser PID. This handles Jetson/GNOME sessions that retain
 desktop bars despite Chromium's kiosk flags. Required X11/GDK host packages
 are installed by this setup step.
+
+When the HMI checkout includes `scripts/host-network-status.py`, the step also
+installs `python3-dbus` and enables the user's `zephyr-hmi-network.service`.
+The sampler writes Wi-Fi/cellular state and signal readings to
+`${XDG_STATE_HOME:-$HOME/.local/state}/zephyr-hmi/network.json`; new development
+containers mount that directory read-only at `/run/zephyr-network`.
+Older HMI checkouts skip this optional sampler with an update notice, so the
+workspace setup can still complete. After updating HMI, rerun this helper.
+The host's D-Bus socket is not exposed to the container.
 
 On GNOME 46 the step also installs the user extension
 `zephyr-kiosk-lock@zephyr.local`. Reload GNOME Shell or log in again after its

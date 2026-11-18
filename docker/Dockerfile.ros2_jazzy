@@ -70,6 +70,7 @@ RUN python3 -m pip install --break-system-packages -U \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y \
         ros-jazzy-ros-base \
+        ros-jazzy-topic-tools \
         ros-jazzy-angles \
         ros-jazzy-apriltag \
         ros-jazzy-behaviortree-cpp-v3 \
