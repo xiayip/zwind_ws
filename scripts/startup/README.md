@@ -18,15 +18,16 @@ To run only this step from the workspace root:
 sudo bash scripts/startup/setup_waveshare_display.sh nvidia
 ```
 
-The saved layout uses `DP-0`, native 600x1600 at 59.991 Hz, rotated `left`
+The saved layouts cover `DP-0` and `DP-1`, native 600x1600 at 59.991 Hz, rotated `left`
 to display in 1600x600 landscape (180° from the previous `right` orientation).
-Although connected via HDMI, this Jetson reports the connector as `DP-0`.
+Although connected via HDMI, this Jetson reports `DP-0` with the NVIDIA X driver
+or `DP-1` with the modesetting fallback. Both profiles use the same panel EDID.
 The profile matches EDID
 `HLT / WaveShsare089 / 0x00000001`; the product spelling is intentional.
-Different connectors or panel EDIDs need a corresponding profile update in
-`waveshare-monitors.xml` and, for a different EDID, the helper's `TOUCH_OUTPUT`.
+Different connectors need an update to the helper's connector list. Different
+panel EDIDs require updating `waveshare-monitors.xml` and the helper's `TOUCH_OUTPUT`.
 
-The installer merges this single-screen profile into the desktop user's and
+The installer merges these single-screen profiles into the desktop user's and
 GDM's `~/.config/monitors.xml`, preserving unrelated monitor arrangements.
 Changed existing files are backed up once as `monitors.xml.before-waveshare`.
 It also binds USB touchscreen `0712:000a` to that monitor in each account's

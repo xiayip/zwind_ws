@@ -40,6 +40,7 @@ for account in "$TARGET_USER" gdm; do
   # Pass the template as text: GDM may not be able to read the workspace path.
   runuser -u "$account" -- "${user_env[@]}" python3 - "$config_dir/monitors.xml" "$MONITOR_XML" <<'PY'
 import os
+import copy
 from pathlib import Path
 import shutil
 import sys
@@ -48,6 +49,12 @@ import xml.etree.ElementTree as ET
 
 path = Path(sys.argv[1])
 desired = ET.fromstring(sys.argv[2]).find("configuration")
+desired_profiles = []
+# NVIDIA Xorg names this port DP-0; the modesetting fallback uses DP-1.
+for connector in ("DP-0", "DP-1"):
+    profile = copy.deepcopy(desired)
+    profile.find(".//monitorspec/connector").text = connector
+    desired_profiles.append(profile)
 fields = ("connector", "vendor", "product", "serial")
 
 def monitor_keys(configuration):
@@ -60,11 +67,12 @@ root = ET.fromstring(original, parser=parser) if original is not None else ET.El
 if root.tag != "monitors" or root.get("version") != "2":
     raise SystemExit(f"Unsupported monitor configuration: {path}")
 
-# Replace only the single Waveshare layout. Keep other screens/multi-screen layouts.
+# Replace only the single Waveshare layouts. Keep other screens/multi-screen layouts.
+desired_keys = [monitor_keys(profile) for profile in desired_profiles]
 for configuration in root.findall("configuration"):
-    if monitor_keys(configuration) == monitor_keys(desired):
+    if monitor_keys(configuration) in desired_keys:
         root.remove(configuration)
-root.append(desired)
+root.extend(desired_profiles)
 ET.indent(root, space="  ")
 content = ET.tostring(root, encoding="utf-8") + b"\n"
 if content != original:

@@ -47,7 +47,7 @@ repositories:
         version: master
     src/zephyr_common/audio_common:
         type: git
-        url: https://github.com/mgonzs13/audio_common.git
+        url: git@jihulab.com:robot_group/zephyr_common/audio_common.git
         version: main
     src/zephyr_common/OrbbecSDK_ROS2:
         type: git
