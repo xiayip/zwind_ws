@@ -41,7 +41,20 @@ available at 50 Hz. Add `use_mag:=true` only when evaluating magnetic fusion;
 the uncalibrated magnetometer can cause attitude correction for seconds after
 motion stops. Six-axis yaw is relative and can drift over longer periods.
 
-Run the serial micro-ROS Agent separately, at **921600 8N1** for firmware 0.3.x.
+`z2_bringup real_world.launch.py` starts the serial micro-ROS Agent at
+**921600 8N1** when the C12H device is present. Mock bringup does not start it.
+The shared image copies the pinned Jazzy ARM64 Agent installation and adds
+`psmisc` for checking serial ownership, without GUI dependencies. Older images
+need rebuilding/recreating. For a bridge-only test inside the workspace container:
+
+```bash
+source install/setup.bash
+ros2 launch z2_bringup c12h_agent.launch.py
+```
+
+Only one Agent should own the port. Use `start_c12h_agent:=false` on real-world
+bringup when keeping a separately managed Agent. The automatic check runs once
+at startup; a board absent then requires restarting bringup after connection.
 Firmware 0.3.1 uses the default ROS domain 0. There is no C12H-specific ROS
 environment file or DDS profile. Containers use the workspace's existing
 `--network host --ipc=host` arrangement. The custom `/hatch/status` message additionally

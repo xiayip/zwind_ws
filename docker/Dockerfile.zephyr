@@ -14,6 +14,8 @@
 # ==================================================================================================
 
 ARG BASE_IMAGE="ubuntu:24.04"
+ARG MICROROS_AGENT_IMAGE=microros/micro-ros-agent@sha256:4561fbf25b52f4bbead5b9c19e26071bdfef31019a9ba9f85db34653fe2444cd
+FROM ${MICROROS_AGENT_IMAGE} AS microros_agent_runtime
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -149,3 +151,13 @@ RUN python3 -m pip install --break-system-packages -i ${TSINGHUA_MIRROR} --no-ca
 # breaks colcon's `--symlink-install` (it runs `setup.py develop --editable`, which newer setuptools
 # no longer accepts → "error: option --editable not recognized"). 68.1.2 matches ROS 2 Jazzy.
 RUN python3 -m pip install --break-system-packages --no-cache-dir --force-reinstall 'setuptools==68.1.2'
+
+# C12H serial bridge: reuse the verified Jazzy ARM64 Agent runtime (~11 MB),
+# without its base image, build workspace, GUI packages or DDS environment overrides.
+COPY --from=microros_agent_runtime /uros_ws/install/ /opt/micro_ros_agent/
+COPY --chmod=0755 scripts/micro-ros-agent /usr/local/bin/micro-ros-agent
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends psmisc \
+    && rm -rf /var/lib/apt/lists/*
+# This Agent version returns 1 for --help; verify the CLI output instead.
+RUN /usr/local/bin/micro-ros-agent --help 2>&1 | grep -q 'Usage:'

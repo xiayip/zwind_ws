@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Load only the Agent's runtime dependencies; preserve the robot's ROS/DDS settings.
+set -e
+source /opt/ros/jazzy/setup.bash
+source /opt/micro_ros_agent/local_setup.bash
+exec /opt/micro_ros_agent/micro_ros_agent/lib/micro_ros_agent/micro_ros_agent "$@"
