@@ -8,6 +8,49 @@ The script installs the Zephyr-managed Gemini 305 udev rule and reloads udev.
 Reconnect an already attached camera if its USB-device permissions do not
 update immediately.
 
+### WHEELTEC C12H / ICM20948
+
+`setup_ws.sh` installs the C12H serial rule with `setup_c12h.sh`, alongside the
+existing device setup. Run just this addition with:
+
+```bash
+sudo ./scripts/startup/setup_c12h.sh
+```
+
+It installs a udev rule for CH9102F `1a86:55d4`, serial `5A9B085467`
+(`/dev/c12h`, dialout/uaccess, ModemManager ignore). A replacement board requires
+updating the serial in `99-zephyr-c12h.rules`. Rules apply on the next USB
+reconnection; the existing `/dev/serial/by-id/...` path remains usable.
+
+The shared `Dockerfile.zephyr` does not add C12H preview dependencies, and
+`setup_ws.sh` does not install host `xauth`. RViz testing is optional: the firmware
+repository's `setup-gui.sh` builds a separate GUI image with
+`ros-jazzy-imu-filter-madgwick` and `ros-jazzy-rviz-imu-plugin` only when requested.
+For a local X11/XWayland desktop, run on the host from the workspace root:
+
+```bash
+# Only if xauth is missing and desktop testing is needed:
+sudo apt-get install --no-install-recommends xauth
+cd ../hatch_actuator_node
+./scripts/microros/setup-gui.sh
+./scripts/microros/rviz.sh
+```
+
+The preview defaults to six-axis attitude fusion. All nine raw sensor axes remain
+available at 50 Hz. Add `use_mag:=true` only when evaluating magnetic fusion;
+the uncalibrated magnetometer can cause attitude correction for seconds after
+motion stops. Six-axis yaw is relative and can drift over longer periods.
+
+Run the serial micro-ROS Agent separately, at **921600 8N1** for firmware 0.3.x.
+Firmware 0.3.1 uses the default ROS domain 0. There is no C12H-specific ROS
+environment file or DDS profile. Containers use the workspace's existing
+`--network host --ipc=host` arrangement. The custom `/hatch/status` message additionally
+requires the `hatch_interfaces` overlay; standard IMU/magnetic topics do not.
+
+For a non-root, non-mutating installation check, pass an absolute staging root
+to `setup_c12h.sh`. The complete `setup_ws.sh` also changes other device/desktop
+settings; use the dedicated helper when only updating C12H serial permissions.
+
 ## Waveshare 8.9-inch display and touch (Jetson desktop)
 
 Step 4 of `setup_ws.sh` configures the validated Ubuntu 24.04 / GNOME 46

@@ -1,0 +1,2 @@
+# Match the verified C12H CH9102F, not every QinHeng serial bridge.
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d4", ATTRS{serial}=="5A9B085467", SYMLINK+="c12h", GROUP="dialout", MODE="0660", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"

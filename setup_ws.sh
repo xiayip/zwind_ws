@@ -31,7 +31,7 @@ trap 'fail' ERR
 # ---------------------------------------------------------------------------
 # Step 1: Install required tools
 # ---------------------------------------------------------------------------
-step "Checking required tools (vcstool, git-lfs)"
+step "Checking required tools (vcstool, git-lfs, serial tools)"
 
 APT_PACKAGES=()
 
@@ -43,6 +43,11 @@ fi
 if ! command -v git-lfs &> /dev/null; then
     echo "    git-lfs not found, will install git-lfs"
     APT_PACKAGES+=(git-lfs)
+fi
+
+# Host-side serial flashing for C12H.
+if ! python3 -c 'import serial' &> /dev/null; then
+    APT_PACKAGES+=(python3-serial)
 fi
 
 if [[ ${#APT_PACKAGES[@]} -gt 0 ]]; then
@@ -68,6 +73,7 @@ step "Setting up device configuration (udev rules, systemd services)"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 sudo "$SCRIPT_DIR/scripts/startup/setup_device_all.sh"
+sudo "$SCRIPT_DIR/scripts/startup/setup_c12h.sh"
 ok "Device configuration complete"
 
 # ---------------------------------------------------------------------------
